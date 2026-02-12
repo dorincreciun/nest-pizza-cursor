@@ -1,0 +1,56 @@
+---
+description: Reguli stricte pentru documentarea NestJS (Swagger/OpenAPI). Impune structura de tip wrapper {data: T} pentru succes și ErrorResponseDto pentru erori 4xx/5xx.
+globs: src/**/*.ts, src/**/*.controller.ts, src/**/*.dto.ts
+alwaysApply: true
+---
+
+# Standarde de Documentare Tehnică (Swagger & JSDoc)
+
+Sunteți responsabil pentru menținerea unei documentații impecabile. Orice bucată de cod generată trebuie să fie auto-explicativă și documentată pentru Swagger conform arhitecturii stabilite.
+
+## 1. Documentația API (Swagger / OpenAPI)
+- **Decoratori Obligatorii pe Controller:**
+  - `@ApiTags('Nume Modul')` la nivel de clasă.
+  - `@ApiBearerAuth()` dacă rutele sunt protejate.
+  - `@ApiExtraModels(ErrorResponseDto, NumeEntityDto)` - OBLIGATORIU pentru a înregistra modelele folosite în schemele manuale.
+- **Decoratori Obligatorii pe Metode (Succes):**
+  - `@ApiOperation({ summary: '...', description: '...' })`.
+  - **Schema Nesting (REGULĂ STRICTĂ):** Este INTERZISĂ returnarea unui DTO direct. Folosiți `schema` pentru a defini wrapper-ul `data`:
+    ```typescript
+    @ApiResponse({ 
+      status: 200, 
+      schema: { 
+        properties: { 
+          data: { $ref: getSchemaPath(NumeDto) } 
+        } 
+      } 
+    })
+    ```
+- **Documentare Erori (4xx, 5xx):**
+  - Fiecare eroare probabilă (400, 401, 404, 409) trebuie documentată folosind `ErrorResponseDto`.
+  - Includeți obligatoriu un `example` care să reflecte structura: `{ statusCode, message, error }`.
+
+## 2. Documentare DTO și Exemple
+- **@ApiProperty:** Fiecare proprietate TREBUIE să aibă `example` și `description`.
+- **Exemple Realiste:** Utilizați date simulate credibile (ex: "john.doe@example.com", nu "string").
+- **Validări:** Reflectați constrângerile de validare (ex: `minLength: 8`) și în metadatele Swagger.
+
+## 3. Documentarea Codului (JSDoc)
+- **Servicii:** Metodele complexe trebuie să includă bloc JSDoc cu:
+  - Descriere scurtă.
+  - `@param` pentru fiecare argument.
+  - `@returns` descrierea datelor returnate.
+  - `@throws` excepțiile NestJS care pot fi aruncate.
+
+## 4. Validarea Finală (Anti-Erori AI)
+- **Schema Consistency:** Dacă aplicația folosește un `TransformInterceptor` global, documentația Swagger TREBUIE să reflecte structura `{ data: T }`.
+- **Error Consistency:** Toate erorile trebuie să aibă aceeași formă pentru a permite generarea automată de tipuri pe client (Frontend).
+- **Update Sync:** Dacă schimbați un câmp în DTO, actualizați imediat exemplul Swagger și descrierea JSDoc.
+
+## 5. README și Module
+- La crearea unui modul nou, generați un comentariu în antetul fișierului `[module].module.ts` care să explice responsabilitatea acestuia în sistem.
+
+## 6. Verificarea Conformității OpenAPI (Final Check)
+- **Cazul Limbă:** Este STRICT INTERZISĂ folosirea limbii române în cheile obiectelor. (Ex: NU `nume`, DA `firstName`).
+- **Nesting:** Orice schemă de succes trebuie să arate astfel: `type: object` -> `properties` -> `data` -> `$ref: '...'`.
+- **Erori:** Nu lăsați niciodată o eroare `4xx` fără schema `$ref: '#/components/schemas/ErrorResponseDto'`.

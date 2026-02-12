@@ -1,0 +1,19 @@
+---
+description: Reguli pentru gestionarea unitară a erorilor și formatul răspunsurilor de eroare.
+globs: src/**/*.service.ts, src/**/*.controller.ts
+alwaysApply: true
+---
+
+# Standarde Error Handling
+
+## 1. Excepții NestJS
+- Folosiți EXCLUSIV excepțiile incorporate din `@nestjs/common` (ex: `NotFoundException`, `ForbiddenException`).
+- NU aruncați erori generice de tip `new Error()`.
+
+## 2. Formatul Erorii
+- Fiecare excepție trebuie să aibă un mesaj clar, util pentru debugging.
+- În cazul erorilor de validare, asigurați-vă că `class-validator` returnează un array de detalii prin `ValidationPipe`.
+
+## 3. Logica de Business
+- Erorile de logică (ex: "Sold insuficient") se aruncă în **Service**.
+- Controller-ul nu trebuie să conțină blocuri `try-catch` decât dacă este absolut necesar pentru transformarea unei erori specifice.

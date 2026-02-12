@@ -1,0 +1,48 @@
+---
+description: Reguli stricte pentru arhitectura NestJS, Prisma, PostgreSQL și Swagger. Organizează folderele pe tipuri de fișiere și impune standarde de codare.
+globs: src/**/*.ts, prisma/schema.prisma, src/**/dto/*.ts
+alwaysApply: true
+---
+
+# Standarde de Dezvoltare NestJS & Prisma
+
+Sunteți un expert backend. Respectați cu strictețe aceste reguli pentru a asigura un cod de producție robust și o arhitectură curată.
+
+## 1. Stack Tehnologic
+- **Framework:** NestJS (Arhitectură oficială).
+- **ORM:** Prisma cu bază de date PostgreSQL.
+- **Documentație:** Swagger (`@nestjs/swagger`).
+- **Validare:** `class-validator` și `class-transformer`.
+- **Strict:** Nu adăugați tool-uri externe suplimentare.
+
+## 2. Organizarea Folderelor (STRICT)
+Fiecare modul din `src/` trebuie să urmeze această structură ierarhică obligatorie:
+- `src/[module]/controllers/` - Conține controllerele și decoratorii Swagger.
+- `src/[module]/services/` - Conține logica de business și injectarea `PrismaService`.
+- `src/[module]/dto/` - Conține fișierele Data Transfer Object (`.dto.ts`).
+- `src/[module]/entities/` - Conține entitățile sau modelele de date (`.entity.ts`).
+- `src/[module]/[module].module.ts` - Fișierul de definire a modulului.
+
+## 3. Limba și Convenții de Naming (STRICT)
+- **Engleză Obligatorie:** Toate cheile JSON, numele variabilelor, proprietățile DTO, numele tabelelor/coloanelor în Prisma și numele metodelor TREBUIE să fie în **limba engleză**.
+  - INCORECT: `nume`, `prenume`, `parola`.
+  - CORECT: `firstName`, `lastName`, `password`.
+- **Limba Română:** Este permisă EXCLUSIV în descrierile pentru utilizator din Swagger (`summary`, `description`) și în mesajele de eroare personalizate.
+- **Formate:** `kebab-case` pentru fișiere, `PascalCase` pentru clase, `camelCase` pentru variabile și proprietăți JSON.
+
+## 4. Reguli de Implementare (Prevenire Erori AI)
+- **Fără Placeholders:** Este strict interzis să scrii comentarii de tipul `// ... restul codului`. Generați totdeauna fișierul complet.
+- **Sincronizare Prisma:** Înainte de a genera rute sau servicii, citește `prisma/schema.prisma`. Nu folosi câmpuri care nu sunt definite explicit în schemă.
+- **Gestionarea Erorilor:** Folosește excepțiile native NestJS (ex: `NotFoundException`, `ConflictException`) în loc de erori JavaScript generice.
+
+## 5. Swagger și Tipizare
+- Fiecare metodă din Controller **trebuie** să includă:
+  - `@ApiOperation({ summary: 'Descriere scurtă în română' })`
+  - `@ApiResponse({ status: ..., description: '...' })`
+  - `@ApiTags('Nume Modul')`
+- Fiecare proprietate din DTO **trebuie** să aibă decoratorul `@ApiProperty()` cu `example` și `description` (descrierea poate fi în română).
+- Toate input-urile din DTO trebuie validate obligatoriu cu decoratori: `@IsString()`, `@IsEmail()`, etc.
+
+## 6. Instrucțiuni de Context
+- **Planificare:** Înainte de a crea sau modifica un modul, prezintă un "Tree View" al structurii propuse.
+- **Injectare:** Injectarea `PrismaService` se face întotdeauna în constructorul serviciului.

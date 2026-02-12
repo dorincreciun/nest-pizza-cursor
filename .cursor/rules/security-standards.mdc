@@ -1,0 +1,23 @@
+---
+description: Reguli de securitate, protecția rutelor și manipularea datelor sensibile.
+globs: src/**/*.controller.ts, src/**/*.dto.ts
+alwaysApply: true
+---
+
+# Securitate și Acces
+
+## 1. Protecția Rutelor
+- Toate rutele sunt protejate implicit de un `JwtAuthGuard` (sau similar), cu excepția celor marcate explicit cu `@Public()`.
+
+## 2. Preluarea Utilizatorului
+- Folosiți un decorator personalizat `@CurrentUser()` pentru a accesa datele utilizatorului logat din Request. NU citiți manual din `req.user`.
+
+## 3. Date Sensibile
+- INTERZIS: Returnarea câmpurilor `password`, `salt`, `token` în DTO-urile de răspuns.
+- Toate parolele trebuie hash-uite înainte de a fi trimise către Prisma în serviciul de Auth.
+
+## 4. Gestiunea Sesiunilor (Refresh Token Policy)
+- **Database Driven:** Orice Refresh Token TREBUIE verificat în tabela `refresh_tokens`.
+- **Token Rotation:** La fiecare apel `/auth/refresh`, vechiul token se șterge și se generează unul nou.
+- **Security:** Refresh Token se trimite EXCLUSIV prin cookie `httpOnly`, `secure`. Access Token se trimite în JSON body.
+- **Single Session:** La login, șterge toate token-urile anterioare ale utilizatorului din DB.

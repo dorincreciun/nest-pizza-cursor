@@ -1,0 +1,18 @@
+---
+description: Reguli pentru interacțiunea cu baza de date prin Prisma și integritatea datelor.
+globs: src/**/*.service.ts, prisma/schema.prisma
+alwaysApply: true
+---
+
+# Database & Prisma Logic
+
+## 1. Tranzacții
+- Dacă o operațiune implică scrierea în mai mult de o tabelă, folosiți obligatoriu `$transaction`.
+
+## 2. Integritate
+- Verificați existența ID-urilor părinte înainte de a crea entități copil, pentru a evita erorile de tip "Foreign Key Constraint".
+- Folosiți `soft delete` (dacă este implementat în schemă) în loc de ștergere fizică.
+
+## 3. Optimizare
+- Nu selectați toate coloanele (`select: { ... }`) dacă aveți nevoie doar de câteva câmpuri.
+- Folosiți `include` cu moderație pentru a evita interogările SQL gigantice.
