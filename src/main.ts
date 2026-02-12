@@ -28,9 +28,29 @@ async function bootstrap() {
   );
 
   // Configurare CORS cu suport pentru cookies
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200'];
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Permite request-uri fără origin (ex: Postman, mobile apps)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Verifică dacă origin-ul este în lista de permisiuni
+      if (allowedOrigins.includes(origin) || process.env.CORS_ORIGINS === '*') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Authorization'],
+    maxAge: 86400, // 24 ore
   });
 
   const port = process.env.PORT || 3000;

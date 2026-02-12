@@ -45,13 +45,15 @@ export class UserEntity {
 
   @ApiProperty({
     example: '2024-01-15T10:30:00.000Z',
-    description: 'Data și ora creării contului',
+    description: 'Data și ora creării contului (format ISO 8601)',
+    type: String,
   })
-  createdAt: Date;
+  createdAt: string;
 
   @ApiProperty({
     example: '2024-01-15T10:30:00.000Z',
-    description: 'Data și ora ultimei actualizări',
+    description: 'Data și ora ultimei actualizări (format ISO 8601)',
+    type: String,
   })
-  updatedAt: Date;
+  updatedAt: string;
 }

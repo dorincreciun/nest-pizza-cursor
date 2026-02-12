@@ -22,7 +22,6 @@ import { Response, Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
@@ -243,6 +242,72 @@ export class AuthController {
     // Returnează doar accessToken (refreshToken este DOAR în cookie)
     return {
       accessToken: tokens.accessToken,
+    };
+  }
+
+  @Post('logout')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Deconectare utilizator',
+    description:
+      'Deconectează utilizatorul autentificat prin ștergerea cookie-ului cu refresh token. Access token-ul rămâne valid până la expirare, dar refresh token-ul este invalidat.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deconectare reușită',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              example: 'Deconectare reușită',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Neautorizat - Token invalid sau lipsă',
+    type: ErrorResponseDto,
+    schema: {
+      $ref: getSchemaPath(ErrorResponseDto),
+    },
+    example: {
+      statusCode: 401,
+      message: 'Token invalid sau expirat',
+      error: 'Unauthorized',
+    },
+  })
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
+    // Citește refresh token din cookie
+    const refreshToken = req.cookies?.refreshToken;
+
+    // Șterge refresh token-ul din baza de date dacă există
+    if (refreshToken) {
+      await this.authService.deleteRefreshToken(refreshToken);
+    }
+
+    // Șterge cookie-ul cu refresh token
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: 0, // Expiră imediat
+      path: '/',
+    });
+
+    return {
+      message: 'Deconectare reușită',
     };
   }
 

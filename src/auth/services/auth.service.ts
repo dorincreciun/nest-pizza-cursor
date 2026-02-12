@@ -50,6 +50,69 @@ export class AuthService {
   }
 
   /**
+   * Salvează refresh token-ul în baza de date
+   * @param userId - ID-ul utilizatorului
+   * @param refreshToken - Token-ul de refresh
+   * @returns RefreshToken creat în baza de date
+   */
+  private async saveRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    const expiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    const expiresInSeconds = this.parseExpiresIn(expiresIn);
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: userId,
+        expiresAt: expiresAt,
+      },
+    });
+  }
+
+  /**
+   * Parsează string-ul de expirare (ex: "7d", "15m") în secunde
+   * @param expiresIn - String de expirare
+   * @returns Număr de secunde
+   */
+  private parseExpiresIn(expiresIn: string): number {
+    const unit = expiresIn.slice(-1);
+    const value = parseInt(expiresIn.slice(0, -1));
+
+    switch (unit) {
+      case 'd':
+        return value * 24 * 60 * 60;
+      case 'h':
+        return value * 60 * 60;
+      case 'm':
+        return value * 60;
+      case 's':
+        return value;
+      default:
+        return 7 * 24 * 60 * 60; // Default 7 zile
+    }
+  }
+
+  /**
+   * Șterge toate refresh token-urile unui utilizator
+   * @param userId - ID-ul utilizatorului
+   */
+  private async deleteUserRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
+  }
+
+  /**
+   * Șterge un refresh token specific din baza de date
+   * @param refreshToken - Token-ul de refresh de șters
+   */
+  async deleteRefreshToken(refreshToken: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({
+      where: { token: refreshToken },
+    });
+  }
+
+  /**
    * Înregistrează un nou utilizator în sistem
    * Hash-uiește parola înainte de a o salva în baza de date
    * @param registerDto - Datele pentru înregistrare (email, password)
@@ -89,10 +152,25 @@ export class AuthService {
 
     const { accessToken, refreshToken } = this.generateTokens(user.id, user.email);
 
+    // Salvează refresh token-ul în baza de date
+    await this.saveRefreshToken(user.id, refreshToken);
+
+    // Transformă datele calendaristice în ISO 8601 string
+    const userResponse: UserResponseDto = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImage: user.profileImage,
+      rol: user.rol,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
+
     // Refresh token-ul va fi setat în cookie de controller, nu este returnat în body
     return {
       accessToken,
-      user,
+      user: userResponse,
       refreshToken, // Folosit intern de controller pentru a seta cookie-ul
     };
   }
@@ -122,7 +200,13 @@ export class AuthService {
       throw new UnauthorizedException('Email sau parolă incorectă');
     }
 
+    // Șterge toate refresh token-urile vechi ale utilizatorului (single session)
+    await this.deleteUserRefreshTokens(user.id);
+
     const { accessToken, refreshToken } = this.generateTokens(user.id, user.email);
+
+    // Salvează noul refresh token în baza de date
+    await this.saveRefreshToken(user.id, refreshToken);
 
     const userResponse: UserResponseDto = {
       id: user.id,
@@ -131,8 +215,8 @@ export class AuthService {
       lastName: user.lastName,
       profileImage: user.profileImage,
       rol: user.rol,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
 
     return {
@@ -144,12 +228,37 @@ export class AuthService {
 
   /**
    * Reînnoiește access token-ul folosind refresh token-ul
+   * Verifică token-ul în baza de date (sursa de adevăr)
    * @param refreshToken - Refresh token-ul pentru reînnoire
    * @returns Noul access token și refresh token
-   * @throws UnauthorizedException dacă refresh token-ul este invalid
+   * @throws UnauthorizedException dacă refresh token-ul este invalid sau nu există în baza de date
    */
   async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     try {
+      // Verifică token-ul în baza de date (sursa de adevăr)
+      const storedToken = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      if (!storedToken) {
+        throw new UnauthorizedException('Refresh token invalid sau expirat');
+      }
+
+      // Verifică dacă token-ul a expirat
+      if (storedToken.expiresAt < new Date()) {
+        // Șterge token-ul expirat
+        await this.deleteRefreshToken(refreshToken);
+        throw new UnauthorizedException('Refresh token expirat');
+      }
+
+      // Verifică dacă utilizatorul există
+      if (!storedToken.user) {
+        await this.deleteRefreshToken(refreshToken);
+        throw new UnauthorizedException('Utilizatorul nu există');
+      }
+
+      // Verifică și validitatea token-ului JWT (pentru siguranță suplimentară)
       const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 
                             this.configService.get<string>('JWT_SECRET') || 
                             'your-refresh-secret-key-change-in-production';
@@ -158,16 +267,32 @@ export class AuthService {
         secret: refreshSecret,
       }) as JwtPayload;
 
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-      });
-
-      if (!user) {
-        throw new UnauthorizedException('Utilizatorul nu există');
+      // Verifică dacă payload-ul corespunde cu utilizatorul din baza de date
+      if (payload.sub !== storedToken.userId) {
+        await this.deleteRefreshToken(refreshToken);
+        throw new UnauthorizedException('Refresh token invalid');
       }
 
-      return this.generateTokens(user.id, user.email);
+      // Șterge vechiul refresh token (rotire token)
+      await this.deleteRefreshToken(refreshToken);
+
+      // Generează noi token-uri
+      const { accessToken, refreshToken: newRefreshToken } = this.generateTokens(
+        storedToken.user.id,
+        storedToken.user.email,
+      );
+
+      // Salvează noul refresh token în baza de date
+      await this.saveRefreshToken(storedToken.user.id, newRefreshToken);
+
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+      };
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Refresh token invalid sau expirat');
     }
   }
@@ -198,6 +323,16 @@ export class AuthService {
       throw new UnauthorizedException('Utilizatorul nu există');
     }
 
-    return user;
+    // Transformă datele calendaristice în ISO 8601 string
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImage: user.profileImage,
+      rol: user.rol,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
   }
 }
