@@ -2,6 +2,7 @@ import { Response, Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 export declare class AuthController {
@@ -16,4 +17,5 @@ export declare class AuthController {
         message: string;
     }>;
     getMe(user: UserResponseDto): Promise<UserResponseDto>;
+    updateProfile(currentUser: UserResponseDto, updateProfileDto: UpdateProfileDto, file?: Express.Multer.File): Promise<UserResponseDto>;
 }

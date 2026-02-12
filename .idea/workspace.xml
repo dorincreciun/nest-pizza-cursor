@@ -6,6 +6,30 @@
   <component name="ChangeListManager">
     <list default="true" id="8a9ab2c0-814f-4233-acb9-b2dc80bb97e1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/app.module.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/app.module.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/app.module.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/app.module.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/auth.module.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/auth.module.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/auth.module.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/auth.module.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/controllers/auth.controller.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/services/auth.service.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/services/auth.service.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/services/auth.service.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/services/auth.service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/auth/services/auth.service.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/auth/services/auth.service.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/main.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/main.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/dist/tsconfig.tsbuildinfo" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/AUTH_SYSTEM_EXPLANATION.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/AUTH_SYSTEM_EXPLANATION.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app.module.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app.module.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/auth/auth.module.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/auth/auth.module.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/auth/controllers/auth.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/auth/controllers/auth.controller.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/auth/services/auth.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/auth/services/auth.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,7 +86,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "C:\\Users\\dorin.creciun\\AppData\\Local\\Programs\\WebStorm\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
+    "ts.external.directory.path": "C:\\Users\\dorin.creciun\\WebstormProjects\\nest-pizza-cursor\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   },
   "keyToStringList": {
@@ -73,10 +97,10 @@
 }]]></component>
   <component name="RecapSpentCounter">
     <option name="endsOfQuotaMs" value="1773381622471" />
-    <option name="spentUsd" value="0.053864" />
+    <option name="spentUsd" value="0.0913251" />
   </component>
   <component name="RecapUselessUpdatesCounter">
-    <option name="suspendCountdown" value="7" />
+    <option name="suspendCountdown" value="5" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -99,7 +123,7 @@
       <updated>1770898315662</updated>
       <workItem from="1770898316794" duration="634000" />
       <workItem from="1770903692930" duration="434000" />
-      <workItem from="1770904148453" duration="1846000" />
+      <workItem from="1770904148453" duration="3318000" />
     </task>
     <servers />
   </component>

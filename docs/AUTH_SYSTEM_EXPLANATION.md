@@ -14,7 +14,8 @@ Acest document explică pas cu pas cum funcționează sistemul de autentificare 
 2. **Refresh Token** - Token JWT cu durată lungă (7 zile) folosit pentru reînnoirea access token-ului
 3. **Baza de Date** - Stochează refresh token-urile pentru validare și control (sursa de adevăr)
 4. **Cookies** - Refresh token-ul este trimis DOAR prin cookie securizat (httpOnly, secure)
-5. **TransformInterceptor** - Interceptor global care:
+5. **Cloudinary** - Serviciu cloud pentru stocarea și optimizarea imaginilor de profil
+6. **TransformInterceptor** - Interceptor global care:
    - Înfășoară toate răspunsurile de succes în structura `{ data: T }`
    - Transformă datele calendaristice (Date objects) în format ISO 8601 string
 
@@ -214,7 +215,193 @@ Authorization: Bearer access_token_here
 
 ---
 
-## 7. Structura Răspunsurilor API
+## 7. Procesul de Actualizare Profil (Update Profile)
+
+### Prezentare Generală
+
+Endpoint-ul `PATCH /auth/profile` permite utilizatorilor autentificați să actualizeze datele profilului lor: `firstName`, `lastName` și `profileImage`. Toate câmpurile sunt opționale - utilizatorul poate actualiza doar ceea ce dorește.
+
+**Caracteristici speciale:**
+- **Upload imagini în Cloudinary**: Dacă este furnizată o imagine, aceasta este uploadată în Cloudinary și doar URL-ul este stocat în baza de date
+- **Gestionare automată**: Vechile imagini sunt șterse automat din Cloudinary când se încarcă o nouă imagine
+- **Validare robustă**: Tipuri de fișiere permise (JPG, PNG, WEBP, GIF), dimensiune maximă 5MB
+- **Securitate**: Doar utilizatorul autentificat își poate actualiza propriul profil
+
+### Pasul 1: Client trimite cerere
+
+```
+PATCH /auth/profile
+Headers: {
+  Authorization: "Bearer {accessToken}",
+  Content-Type: "multipart/form-data"
+}
+Body (FormData): {
+  firstName: "John" (opțional),
+  lastName: "Doe" (opțional),
+  profileImage: File (opțional)
+}
+```
+
+### Pasul 2: Server procesează cererea
+
+#### 2.1. Validare autentificare
+- `JwtAuthGuard` verifică access token-ul din header
+- `@CurrentUser()` decorator extrage datele utilizatorului autentificat
+- `FileInterceptor` procesează fișierul de imagine (dacă este furnizat)
+
+#### 2.2. Validare date
+- `UpdateProfileDto` validează `firstName` și `lastName` (dacă sunt furnizate)
+- Validare cu `class-validator`: `@IsOptional()`, `@IsString()`, `@MaxLength(100)`
+
+#### 2.3. Verificare utilizator
+- `AuthService.updateProfile()` verifică dacă utilizatorul există în baza de date
+- Dacă utilizatorul nu există, se aruncă `UnauthorizedException`
+
+### Pasul 3: Procesare imagine (dacă este furnizată)
+
+#### 3.1. Validare fișier
+`CloudinaryService.uploadImage()` validează:
+- **Tip fișier**: Doar imagini (JPG, PNG, WEBP, GIF)
+- **Dimensiune**: Maxim 5MB
+- **Conținut**: Buffer-ul nu poate fi gol
+
+#### 3.2. Upload în Cloudinary
+- Imaginea este uploadată în folder-ul `nest-pizza/profiles` din Cloudinary
+- Transformări automate aplicate:
+  - **Redimensionare**: Maxim 500x500px (păstrează aspect ratio cu `crop: 'limit'`)
+  - **Optimizare**: Calitate automată (`quality: 'auto'`)
+  - **Format**: Conversie automată la format optim (`fetch_format: 'auto'` - WebP dacă browser-ul suportă)
+- **Nume unic**: Fiecare imagine primește un nume unic pentru a evita conflictele
+- **HTTPS**: Returnează URL securizat (HTTPS)
+
+#### 3.3. Ștergere imagine veche
+- **DOAR după upload reușit**: Vechia imagine este ștearsă din Cloudinary doar dacă upload-ul noii imagini a reușit
+- **Protecție date**: Dacă upload-ul eșuează, vechea imagine rămâne intactă
+- `CloudinaryService.deleteImage()` extrage `public_id` din URL și șterge imaginea
+
+### Pasul 4: Actualizare baza de date
+
+#### 4.1. Construire date actualizare
+- Se construiește obiectul `updateData` doar cu câmpurile furnizate:
+  - Dacă `firstName` este furnit → se adaugă în `updateData`
+  - Dacă `lastName` este furnit → se adaugă în `updateData`
+  - Dacă `file` este furnit → se adaugă `profileImage` cu URL-ul din Cloudinary
+
+#### 4.2. Actualizare utilizator
+- `Prisma.user.update()` actualizează doar câmpurile furnizate
+- `updatedAt` este actualizat automat de Prisma (`@updatedAt`)
+
+#### 4.3. Transformare date calendaristice
+- `createdAt` și `updatedAt` sunt transformate din `Date` objects în ISO 8601 string
+- Format: `"2024-01-15T10:30:00.000Z"`
+
+### Pasul 5: Transformare răspuns și date calendaristice
+- `TransformInterceptor` global transformă datele calendaristice în ISO 8601 string
+- `TransformInterceptor` înfășoară răspunsul în structura `{ data: T }`
+
+### Pasul 6: Răspuns către client
+
+**Răspuns Body:**
+```json
+{
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "profileImage": "https://res.cloudinary.com/cloud-name/image/upload/v1234567890/nest-pizza/profiles/unique-filename.jpg",
+    "rol": "USER",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:45:30.000Z"
+  }
+}
+```
+
+**Status**: 200 OK
+
+### Cazuri Speciale
+
+#### Cazul 1: Actualizare doar firstName și lastName (fără imagine)
+- Nu se face upload în Cloudinary
+- Vechia imagine rămâne neschimbată în Cloudinary și în baza de date
+
+#### Cazul 2: Actualizare doar imagine (fără firstName/lastName)
+- Se face upload în Cloudinary
+- Vechia imagine este ștearsă din Cloudinary
+- `firstName` și `lastName` rămân neschimbate în baza de date
+
+#### Cazul 3: Actualizare completă (firstName, lastName, imagine)
+- Se face upload în Cloudinary
+- Vechia imagine este ștearsă din Cloudinary
+- Toate câmpurile sunt actualizate în baza de date
+
+#### Cazul 4: Cerere fără date de actualizare
+- Dacă nu este furnizat niciun câmp, se returnează utilizatorul existent fără modificări
+
+### Erori Posibile
+
+#### 400 Bad Request
+- Validare DTO eșuată (ex: `firstName` prea lung)
+- Tip fișier nepermis (ex: PDF în loc de imagine)
+- Dimensiune fișier prea mare (> 5MB)
+- Fișier gol sau corupt
+- Eroare la upload-ul în Cloudinary
+
+**Exemplu răspuns:**
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "firstName must be longer than or equal to 2 characters",
+    "Tipul fișierului nu este suportat. Acceptă doar: JPG, PNG, WEBP, GIF"
+  ],
+  "error": "Bad Request"
+}
+```
+
+#### 401 Unauthorized
+- Token invalid sau expirat
+- Utilizatorul nu există în baza de date
+
+**Exemplu răspuns:**
+```json
+{
+  "statusCode": 401,
+  "message": "Token invalid sau expirat",
+  "error": "Unauthorized"
+}
+```
+
+### Securitate și Best Practices
+
+#### 1. Validare Multi-Nivel
+- **Client-side**: Validare înainte de trimitere
+- **Server-side**: Validare strictă cu `class-validator`
+- **Cloudinary**: Validare tip și dimensiune fișier
+
+#### 2. Gestionare Erori
+- Upload-ul noii imagini se face ÎNAINTE de ștergerea vechii
+- Dacă upload-ul eșuează, vechea imagine rămâne intactă
+- Erorile sunt propagate corect către client
+
+#### 3. Optimizare Imagini
+- Transformări automate în Cloudinary (resize, optimize)
+- Format optim (WebP dacă browser-ul suportă)
+- Calitate automată pentru balanță între calitate și dimensiune
+
+#### 4. Stocare Eficientă
+- Doar URL-ul este stocat în baza de date (nu fișierul)
+- Imagini stocate în Cloudinary (CDN global)
+- Ștergere automată a imaginilor vechi pentru a economisi spațiu
+
+#### 5. Securitate
+- Doar utilizatorul autentificat își poate actualiza propriul profil
+- Validare strictă a tipurilor de fișiere
+- Limitare dimensiune pentru a preveni atacuri DoS
+
+---
+
+## 8. Structura Răspunsurilor API
 
 ### TransformInterceptor Global
 
@@ -273,6 +460,22 @@ Toate răspunsurile de succes sunt automat înfășurate în structura `{ data: 
 }
 ```
 
+**Update Profile:**
+```json
+{
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john.doe@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "profileImage": "https://res.cloudinary.com/cloud-name/image/upload/v1234567890/nest-pizza/profiles/unique-filename.jpg",
+    "rol": "USER",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:45:30.000Z"
+  }
+}
+```
+
 **Logout:**
 ```json
 {
@@ -288,7 +491,7 @@ Toate datele calendaristice (`createdAt`, `updatedAt`) sunt transformate automat
 
 ---
 
-## 8. Securitate și Best Practices
+## 9. Securitate și Best Practices
 
 ### De ce Refresh Token în Baza de Date?
 
@@ -587,6 +790,8 @@ Sistemul de autentificare implementat oferă:
 ✅ **Audit** - Toate token-urile sunt înregistrate în baza de date
 ✅ **Standardizare API** - Toate răspunsurile în format `{ data: T }` prin TransformInterceptor
 ✅ **Format consistent** - Datele calendaristice în format ISO 8601 string
+✅ **Gestionare imagini** - Upload automat în Cloudinary cu optimizare și transformări automate
+✅ **Actualizare profil** - Actualizare flexibilă a datelor profilului (firstName, lastName, profileImage)
 
 ### Puncte Cheie
 
@@ -599,3 +804,5 @@ Sistemul de autentificare implementat oferă:
 4. **Single Session**: La login, toate token-urile vechi sunt șterse, asigurând o singură sesiune activă per utilizator.
 
 5. **Token Rotation**: La fiecare refresh, vechiul token este șters și unul nou este generat, mărind securitatea.
+
+6. **Gestionare Imagini Cloudinary**: Imagini de profil sunt stocate în Cloudinary, doar URL-ul este salvat în baza de date. Transformări automate (resize, optimize) și ștergere automată a imaginilor vechi.

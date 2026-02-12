@@ -14,6 +14,7 @@ const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const jwt_auth_guard_1 = require("./auth/guards/jwt-auth.guard");
 const transform_interceptor_1 = require("./common/interceptors/transform.interceptor");
+const global_exception_filter_1 = require("./common/filters/global-exception.filter");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +36,10 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_INTERCEPTOR,
                 useClass: transform_interceptor_1.TransformInterceptor,
+            },
+            {
+                provide: core_1.APP_FILTER,
+                useClass: global_exception_filter_1.GlobalExceptionFilter,
             },
         ],
     })

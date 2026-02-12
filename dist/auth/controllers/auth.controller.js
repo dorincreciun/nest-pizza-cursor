@@ -14,10 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
 const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("../services/auth.service");
 const register_dto_1 = require("../dto/register.dto");
 const login_dto_1 = require("../dto/login.dto");
+const update_profile_dto_1 = require("../dto/update-profile.dto");
 const auth_response_dto_1 = require("../dto/auth-response.dto");
 const user_response_dto_1 = require("../dto/user-response.dto");
 const error_response_dto_1 = require("../../common/dto/error-response.dto");
@@ -94,6 +97,9 @@ let AuthController = class AuthController {
     }
     async getMe(user) {
         return user;
+    }
+    async updateProfile(currentUser, updateProfileDto, file) {
+        return await this.authService.updateProfile(currentUser.id, updateProfileDto, file);
     }
 };
 exports.AuthController = AuthController;
@@ -329,9 +335,95 @@ __decorate([
     __metadata("design:paramtypes", [user_response_dto_1.UserResponseDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getMe", null);
+__decorate([
+    (0, common_1.Patch)('profile'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profileImage', {
+        storage: (0, multer_1.memoryStorage)(),
+        limits: {
+            fileSize: 5 * 1024 * 1024,
+        },
+    })),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Actualizare profil utilizator',
+        description: 'Actualizează datele profilului utilizatorului autentificat. Toate câmpurile sunt opționale - poți actualiza doar ceea ce dorești (firstName, lastName, profileImage). Imaginea de profil va fi uploadată în Cloudinary.',
+    }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                firstName: {
+                    type: 'string',
+                    example: 'John',
+                    description: 'Numele utilizatorului',
+                },
+                lastName: {
+                    type: 'string',
+                    example: 'Doe',
+                    description: 'Prenumele utilizatorului',
+                },
+                profileImage: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Imaginea de profil (JPG, PNG, max 5MB)',
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Profil actualizat cu succes',
+        schema: {
+            type: 'object',
+            properties: {
+                data: {
+                    $ref: (0, swagger_1.getSchemaPath)(user_response_dto_1.UserResponseDto),
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: 'Date de validare invalide sau eroare la upload-ul imaginii',
+        type: error_response_dto_1.ErrorResponseDto,
+        schema: {
+            $ref: (0, swagger_1.getSchemaPath)(error_response_dto_1.ErrorResponseDto),
+        },
+        example: {
+            statusCode: 400,
+            message: [
+                'firstName must be longer than or equal to 2 characters',
+                'Dimensiunea fișierului nu poate depăși 5MB',
+            ],
+            error: 'Bad Request',
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: 'Neautorizat - Token invalid sau lipsă',
+        type: error_response_dto_1.ErrorResponseDto,
+        schema: {
+            $ref: (0, swagger_1.getSchemaPath)(error_response_dto_1.ErrorResponseDto),
+        },
+        example: {
+            statusCode: 401,
+            message: 'Token invalid sau expirat',
+            error: 'Unauthorized',
+        },
+    }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_response_dto_1.UserResponseDto,
+        update_profile_dto_1.UpdateProfileDto, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('Autentificare'),
-    (0, swagger_1.ApiExtraModels)(error_response_dto_1.ErrorResponseDto, auth_response_dto_1.AuthResponseDto, user_response_dto_1.UserResponseDto),
+    (0, swagger_1.ApiExtraModels)(error_response_dto_1.ErrorResponseDto, auth_response_dto_1.AuthResponseDto, user_response_dto_1.UserResponseDto, update_profile_dto_1.UpdateProfileDto),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);

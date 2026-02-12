@@ -15,11 +15,13 @@ const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const bcrypt = require("bcrypt");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const cloudinary_service_1 = require("../../cloudinary/services/cloudinary.service");
 let AuthService = class AuthService {
-    constructor(prisma, jwtService, configService) {
+    constructor(prisma, jwtService, configService, cloudinaryService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.cloudinaryService = cloudinaryService;
     }
     generateTokens(userId, email) {
         const payload = {
@@ -218,12 +220,76 @@ let AuthService = class AuthService {
             updatedAt: user.updatedAt.toISOString(),
         };
     }
+    async updateProfile(userId, updateProfileDto, file) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!existingUser) {
+            throw new common_1.UnauthorizedException('Utilizatorul nu există');
+        }
+        const updateData = {};
+        if (updateProfileDto.firstName !== undefined) {
+            updateData.firstName = updateProfileDto.firstName || null;
+        }
+        if (updateProfileDto.lastName !== undefined) {
+            updateData.lastName = updateProfileDto.lastName || null;
+        }
+        if (file) {
+            try {
+                const imageUrl = await this.cloudinaryService.uploadImage(file, 'nest-pizza/profiles');
+                if (existingUser.profileImage) {
+                    await this.cloudinaryService.deleteImage(existingUser.profileImage);
+                }
+                updateData.profileImage = imageUrl;
+            }
+            catch (error) {
+                throw error;
+            }
+        }
+        if (Object.keys(updateData).length === 0) {
+            return {
+                id: existingUser.id,
+                email: existingUser.email,
+                firstName: existingUser.firstName,
+                lastName: existingUser.lastName,
+                profileImage: existingUser.profileImage,
+                rol: existingUser.rol,
+                createdAt: existingUser.createdAt.toISOString(),
+                updatedAt: existingUser.updatedAt.toISOString(),
+            };
+        }
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+                rol: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+        return {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            profileImage: updatedUser.profileImage,
+            rol: updatedUser.rol,
+            createdAt: updatedUser.createdAt.toISOString(),
+            updatedAt: updatedUser.updatedAt.toISOString(),
+        };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        cloudinary_service_1.CloudinaryService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

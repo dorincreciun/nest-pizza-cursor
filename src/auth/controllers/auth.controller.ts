@@ -2,13 +2,18 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   HttpCode,
   HttpStatus,
   Res,
   Req,
   UnauthorizedException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -16,12 +21,15 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
   ApiExtraModels,
+  ApiConsumes,
+  ApiBody,
   getSchemaPath,
 } from '@nestjs/swagger';
 import { Response, Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
@@ -33,7 +41,7 @@ import { Public } from '../decorators/public.decorator';
  * Oferă endpoint-uri pentru înregistrare, autentificare și preluarea datelor utilizatorului curent
  */
 @ApiTags('Autentificare')
-@ApiExtraModels(ErrorResponseDto, AuthResponseDto, UserResponseDto)
+@ApiExtraModels(ErrorResponseDto, AuthResponseDto, UserResponseDto, UpdateProfileDto)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -345,5 +353,93 @@ export class AuthController {
   })
   async getMe(@CurrentUser() user: UserResponseDto): Promise<UserResponseDto> {
     return user;
+  }
+
+  @Patch('profile')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('profileImage', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Actualizare profil utilizator',
+    description:
+      'Actualizează datele profilului utilizatorului autentificat. Toate câmpurile sunt opționale - poți actualiza doar ceea ce dorești (firstName, lastName, profileImage). Imaginea de profil va fi uploadată în Cloudinary.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        firstName: {
+          type: 'string',
+          example: 'John',
+          description: 'Numele utilizatorului',
+        },
+        lastName: {
+          type: 'string',
+          example: 'Doe',
+          description: 'Prenumele utilizatorului',
+        },
+        profileImage: {
+          type: 'string',
+          format: 'binary',
+          description: 'Imaginea de profil (JPG, PNG, max 5MB)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profil actualizat cu succes',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          $ref: getSchemaPath(UserResponseDto),
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Date de validare invalide sau eroare la upload-ul imaginii',
+    type: ErrorResponseDto,
+    schema: {
+      $ref: getSchemaPath(ErrorResponseDto),
+    },
+    example: {
+      statusCode: 400,
+      message: [
+        'firstName must be longer than or equal to 2 characters',
+        'Dimensiunea fișierului nu poate depăși 5MB',
+      ],
+      error: 'Bad Request',
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Neautorizat - Token invalid sau lipsă',
+    type: ErrorResponseDto,
+    schema: {
+      $ref: getSchemaPath(ErrorResponseDto),
+    },
+    example: {
+      statusCode: 401,
+      message: 'Token invalid sau expirat',
+      error: 'Unauthorized',
+    },
+  })
+  async updateProfile(
+    @CurrentUser() currentUser: UserResponseDto,
+    @Body() updateProfileDto: UpdateProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<UserResponseDto> {
+    return await this.authService.updateProfile(currentUser.id, updateProfileDto, file);
   }
 }

@@ -34,9 +34,19 @@ async function bootstrap() {
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Requested-With',
+            'Accept',
+            'Origin',
+            'Access-Control-Request-Method',
+            'Access-Control-Request-Headers',
+        ],
         exposedHeaders: ['Authorization'],
         maxAge: 86400,
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
     });
     const port = process.env.PORT || 3000;
     const config = new swagger_1.DocumentBuilder()

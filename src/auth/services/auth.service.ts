@@ -7,8 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CloudinaryService } from '../../cloudinary/services/cloudinary.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { JwtPayload } from '../strategies/jwt.strategy';
@@ -23,6 +25,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   /**
@@ -333,6 +336,109 @@ export class AuthService {
       rol: user.rol,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Actualizează datele profilului utilizatorului
+   * Toate câmpurile sunt opționale - se actualizează doar ceea ce este furnizat
+   * Dacă este furnizat un fișier pentru profileImage, acesta va fi uploadat în Cloudinary
+   * și vechea imagine va fi ștearsă automat din Cloudinary
+   * @param userId - ID-ul utilizatorului autentificat
+   * @param updateProfileDto - Datele pentru actualizare (firstName, lastName)
+   * @param file - Fișierul de imagine pentru profileImage (opțional)
+   * @returns Datele utilizatorului actualizat cu datele calendaristice transformate în ISO 8601
+   * @throws UnauthorizedException dacă utilizatorul nu există
+   * @throws BadRequestException dacă upload-ul imaginii eșuează (prin CloudinaryService)
+   */
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+    file?: Express.Multer.File,
+  ): Promise<UserResponseDto> {
+    // Verifică dacă utilizatorul există
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new UnauthorizedException('Utilizatorul nu există');
+    }
+
+    // Construiește obiectul de actualizare doar cu câmpurile furnizate
+    const updateData: {
+      firstName?: string | null;
+      lastName?: string | null;
+      profileImage?: string | null;
+    } = {};
+
+    // Adaugă doar câmpurile care sunt furnizate în DTO
+    if (updateProfileDto.firstName !== undefined) {
+      updateData.firstName = updateProfileDto.firstName || null;
+    }
+    if (updateProfileDto.lastName !== undefined) {
+      updateData.lastName = updateProfileDto.lastName || null;
+    }
+
+    // Dacă este furnizat un fișier, upload-l în Cloudinary
+    if (file) {
+      try {
+        // Upload noua imagine în Cloudinary (înainte de a șterge vechea)
+        const imageUrl = await this.cloudinaryService.uploadImage(file, 'nest-pizza/profiles');
+        
+        // Doar după upload reușit, șterge vechea imagine din Cloudinary dacă există
+        if (existingUser.profileImage) {
+          await this.cloudinaryService.deleteImage(existingUser.profileImage);
+        }
+        
+        // Salvează URL-ul în obiectul de actualizare
+        updateData.profileImage = imageUrl;
+      } catch (error) {
+        // Dacă upload-ul eșuează, aruncă eroarea (nu șterge vechea imagine)
+        throw error;
+      }
+    }
+
+    // Dacă nu există date de actualizat, returnează utilizatorul existent
+    if (Object.keys(updateData).length === 0) {
+      return {
+        id: existingUser.id,
+        email: existingUser.email,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        profileImage: existingUser.profileImage,
+        rol: existingUser.rol,
+        createdAt: existingUser.createdAt.toISOString(),
+        updatedAt: existingUser.updatedAt.toISOString(),
+      };
+    }
+
+    // Actualizează utilizatorul în baza de date
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profileImage: true,
+        rol: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Transformă datele calendaristice în ISO 8601 string
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      profileImage: updatedUser.profileImage,
+      rol: updatedUser.rol,
+      createdAt: updatedUser.createdAt.toISOString(),
+      updatedAt: updatedUser.updatedAt.toISOString(),
     };
   }
 }

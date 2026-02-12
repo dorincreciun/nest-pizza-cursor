@@ -16,6 +16,7 @@ const auth_controller_1 = require("./controllers/auth.controller");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const prisma_service_1 = require("../prisma/prisma.service");
+const cloudinary_module_1 = require("../cloudinary/cloudinary.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -33,6 +34,7 @@ exports.AuthModule = AuthModule = __decorate([
                 }),
                 inject: [config_1.ConfigService],
             }),
+            cloudinary_module_1.CloudinaryModule,
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, jwt_auth_guard_1.JwtAuthGuard, prisma_service_1.PrismaService],
