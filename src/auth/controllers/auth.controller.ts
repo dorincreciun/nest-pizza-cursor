@@ -321,6 +321,7 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Preluare date utilizator curent',
     description:
@@ -352,6 +353,7 @@ export class AuthController {
     },
   })
   async getMe(@CurrentUser() user: UserResponseDto): Promise<UserResponseDto> {
+    // Returnează utilizatorul - TransformInterceptor va înfășura răspunsul în { data: ... }
     return user;
   }
 

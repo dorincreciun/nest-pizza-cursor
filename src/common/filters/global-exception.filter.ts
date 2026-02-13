@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ErrorResponseDto } from '../dto/error-response.dto';
@@ -69,6 +70,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error: error,
     };
 
+    // Setează explicit Content-Type la application/json pentru a preveni returnarea HTML
+    response.setHeader('Content-Type', 'application/json');
+    
     // Trimite răspunsul
     response.status(status).json(errorResponse);
   }
