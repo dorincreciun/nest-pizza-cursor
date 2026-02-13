@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiOptions } from 'cloudinary';
 import { Express } from 'express';
 
 /**
@@ -59,7 +59,7 @@ export class CloudinaryService {
     }
 
     return new Promise((resolve, reject) => {
-      const uploadOptions: cloudinary.UploadApiOptions = {
+      const uploadOptions: UploadApiOptions = {
         folder: folder || 'nest-pizza/profiles',
         resource_type: 'image',
         transformation: [

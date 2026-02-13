@@ -4,14 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8a9ab2c0-814f-4233-acb9-b2dc80bb97e1" name="Changes" comment="" />
+    <list default="true" id="8a9ab2c0-814f-4233-acb9-b2dc80bb97e1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/2e51de46-52c0-4a68-a90a-15073ecc97f3.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/2e51de46-52c0-4a68-a90a-15073ecc97f3.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cloudinary/services/cloudinary.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/cloudinary/services/cloudinary.service.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="33" />
+    <option name="cachedIndexableFilesCount" value="57" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -53,12 +57,13 @@
     "git-widget-placeholder": "main",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/dorin.creciun/WebstormProjects/nest-pizza-cursor",
+    "last_opened_file_path": "D:/personal/nest-pizza-cursor",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "npm.start:dev.executor": "Run",
     "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "C:\\Users\\dorin.creciun\\AppData\\Local\\Programs\\WebStorm\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
     "vue.rearranger.settings.migration": "true"
@@ -78,8 +83,24 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\personal\nest-pizza-cursor" />
       <recent name="C:\Users\dorin.creciun\WebstormProjects\nest-pizza-cursor" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="start:dev" type="js.build_tools.npm" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="start:dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <EXTENSION ID="com.intellij.javascript.debugger.execution.StartBrowserRunConfigurationExtension">
+        <browser with-js-debugger="true" />
+      </EXTENSION>
+      <method v="2" />
+    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -98,6 +119,7 @@
       <workItem from="1770898316794" duration="634000" />
       <workItem from="1770903692930" duration="434000" />
       <workItem from="1770904148453" duration="3318000" />
+      <workItem from="1770970118262" duration="879000" />
     </task>
     <servers />
   </component>
