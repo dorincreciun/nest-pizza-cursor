@@ -1,48 +1,47 @@
 ---
-description: Reguli stricte pentru standardizarea răspunsurilor API, utilizarea DTO-urilor de output și documentarea status codurilor în Swagger.
+description: Reguli stricte pentru standardizarea răspunsurilor API, utilizarea DTO-urilor de output fără proprietăți opționale și documentarea status codurilor în Swagger.
 globs: src/**/*.controller.ts, src/**/dto/*.ts
 alwaysApply: true
 ---
 
-# Standarde pentru API Response & Serializare
+# Standarde pentru API Response & Serializare (Strict Mode)
 
-Sunteți un expert backend. Respectați aceste reguli pentru a asigura răspunsuri API consistente, securizate și perfect documentate pentru client.
+Sunteți un expert backend. Respectați aceste reguli pentru a asigura răspunsuri API consistente, securizate și perfect documentate.
 
 ## 1. Structura și Serializarea Răspunsului
-- **DTO de Output obligatoriu:** Nu returnați niciodată entitățile brute din Prisma. Creați întotdeauna un DTO de răspuns (ex: `UserResponseDto`).
-- **Transformare:** Folosiți `@Expose()` și `@Exclude()` din `class-transformer` în DTO-urile de răspuns pentru a filtra datele sensibile (ex: parole, hash-uri).
-- **Format Unitat:** Toate endpoint-urile care returnează liste trebuie să fie înfășurate într-un obiect cu structura: `{ "data": [], "meta": { "total": number, "page": number } }`.
-- **Date Calendaristice:** Toate datele trebuie returnate în format ISO 8601 string.
+- **DTO de Output Obligatoriu:** Nu returnați niciodată entitățile brute din baza de date (ex. Prisma). Creați întotdeauna un DTO de răspuns (ex: `UserResponseDto`).
+- **Strict Non-Optional (Regulă Nouă):** În DTO-urile de răspuns, proprietățile **nu trebuie să fie opționale**. Este interzisă folosirea simbolului `?`. Dacă un câmp poate fi nul, acesta trebuie definit explicit ca `string | null`, dar trebuie să fie prezent în obiectul JSON returnat.
+- **Transformare:** Folosiți `@Expose()` și `@Exclude()` din `class-transformer` pentru a filtra datele sensibile (ex: parole, hash-uri).
+- **Format Unitat:** Toate endpoint-urile care returnează liste trebuie să fie înfășurate în structura: `{ "data": T[], "meta": { "total": number, "page": number, "limit": number } }`.
+- **Date Calendaristice:** Toate datele trebuie returnate ca string în format ISO 8601.
 
 ## 2. Decoratori Swagger (Obligatorii)
-Fiecare metodă din Controller trebuie să specifice explicit tipul de returnare pentru generarea automată a clientului:
-- **Succes (REGULĂ STRICTĂ):** Este INTERZISĂ returnarea unui DTO direct. Folosiți schema cu wrapper `data`:
+Fiecare metodă din Controller trebuie să specifice explicit tipul de returnare:
+- **Succes (Regulă Strictă):** Este INTERZISĂ returnarea unui DTO direct fără wrapper-ul `data`.
   ```typescript
   @ApiResponse({ 
-    status: 200/201, 
+    status: 200,
     schema: { 
       type: 'object',
+      required: ['data'],
       properties: { 
         data: { $ref: getSchemaPath(NumeResponseDto) } 
       } 
     } 
   })
   ```
-  Dacă este listă, adăugați `isArray: true` în schema `data`.
-- **Erori Comune:** Documentați întotdeauna cel puțin:
-  - `@ApiResponse({ status: 400, description: 'Validare eșuată', type: ErrorResponseDto, schema: { $ref: getSchemaPath(ErrorResponseDto) }, example: {...} })`
-  - `@ApiResponse({ status: 404, description: 'Resursa nu există', type: ErrorResponseDto, schema: { $ref: getSchemaPath(ErrorResponseDto) }, example: {...} })`
-  - `@ApiResponse({ status: 401, description: 'Neautorizat', type: ErrorResponseDto, schema: { $ref: getSchemaPath(ErrorResponseDto) }, example: {...} })` (dacă există Guard).
+- **Documentare Erori:** Documentați obligatoriu statusurile 400, 401 (dacă există Guard) și 404 folosind `ErrorResponseDto`.
 
 ## 3. Validare și Tipizare
 - **Class-Validator:** Toate DTO-urile de intrare (Request) trebuie să aibă decoratori de validare activi.
-- **Naming Convention:** DTO-urile de răspuns se vor numi întotdeauna după șablonul `[Nume]ResponseDto.ts`.
+- **Proprietăți Grăitoare:** Folosiți `@ApiProperty()` pentru fiecare câmp din DTO-urile de răspuns. Specificați `example` și `required: true`.
+- **Naming:** DTO-urile de răspuns se vor numi întotdeauna după șablonul `[Nume]ResponseDto.ts`.
 
 ## 4. Reguli de Implementare pentru AI
-- **Fără Placeholders:** Generați clasa DTO completă, cu toți decoratorii Swagger și de validare.
-- **Strict Layout:** Plasați DTO-urile de răspuns în folderul `src/[module]/dto/`.
-- **Consistency:** Dacă o metodă returnează un obiect creat nou, asigurați-vă că statusul este `201 Created`, nu `200 OK`.
+- **Fără Placeholders:** Generați clasa DTO completă. Toate câmpurile trebuie să fie definite clar.
+- **Fără ?: (Optional Chaining):** În loc de `name?: string`, folosiți `name: string`. Dacă datele lipsesc, asigurați-vă că DTO-ul este populat cu o valoare default sau `null`.
+- **Consistency:** Metoda de creare trebuie să returneze `201 Created`, nu `200 OK`.
 
 ## 5. Instrucțiuni de Context
-- **Verificare Interceptoare:** Înainte de a genera un format nou, verificați dacă există deja un `TransformInterceptor` global care înfășoară răspunsurile.
-- **Sincronizare:** Asigurați-vă că tipurile de date din `ResponseDto` corespund cu tipurile returnate de serviciul care apelează Prisma.
+- **Interceptoare:** Verificați dacă există un `TransformInterceptor` global. Chiar dacă acesta există, decoratorul `@ApiResponse` din Controller trebuie să reflecte structura finală (cu `data`) pentru a genera un client corect.
+- **Sincronizare:** Asigurați-vă că tipurile de date din `ResponseDto` corespund exact cu tipurile returnate de serviciul care interoghează baza de date.

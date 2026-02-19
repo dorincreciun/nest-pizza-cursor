@@ -39,3 +39,19 @@ enum Role {
   USER
   ADMIN
 }
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Category {
+  id        Int            @id @default(autoincrement())
+  slug      String         @unique
+  name      String
+  status    CategoryStatus @default(ACTIVE)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@map("categories")
+}

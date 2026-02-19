@@ -59,10 +59,9 @@ export class AuthController {
     description: 'Utilizator creat cu succes',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
-        data: {
-          $ref: getSchemaPath(AuthResponseDto),
-        },
+        data: { $ref: getSchemaPath(AuthResponseDto) },
       },
     },
   })
@@ -128,10 +127,9 @@ export class AuthController {
     description: 'Autentificare reușită',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
-        data: {
-          $ref: getSchemaPath(AuthResponseDto),
-        },
+        data: { $ref: getSchemaPath(AuthResponseDto) },
       },
     },
   })
@@ -198,14 +196,13 @@ export class AuthController {
     description: 'Access token reînnoit cu succes',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
         data: {
           type: 'object',
+          required: ['accessToken'],
           properties: {
-            accessToken: {
-              type: 'string',
-              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-            },
+            accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
           },
         },
       },
@@ -266,14 +263,13 @@ export class AuthController {
     description: 'Deconectare reușită',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
         data: {
           type: 'object',
+          required: ['message'],
           properties: {
-            message: {
-              type: 'string',
-              example: 'Deconectare reușită',
-            },
+            message: { type: 'string', example: 'Deconectare reușită' },
           },
         },
       },
@@ -332,10 +328,9 @@ export class AuthController {
     description: 'Date utilizator returnate cu succes',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
-        data: {
-          $ref: getSchemaPath(UserResponseDto),
-        },
+        data: { $ref: getSchemaPath(UserResponseDto) },
       },
     },
   })
@@ -401,10 +396,9 @@ export class AuthController {
     description: 'Profil actualizat cu succes',
     schema: {
       type: 'object',
+      required: ['data'],
       properties: {
-        data: {
-          $ref: getSchemaPath(UserResponseDto),
-        },
+        data: { $ref: getSchemaPath(UserResponseDto) },
       },
     },
   })

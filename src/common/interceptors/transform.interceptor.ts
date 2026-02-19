@@ -30,6 +30,16 @@ export class TransformInterceptor<T> implements NestInterceptor<T, { data: T }> 
           return transformedData as { data: T };
         }
 
+        // Liste: deja în formatul { data: T[], meta } – nu adăuga un al doilea nivel de "data"
+        if (
+          transformedData &&
+          typeof transformedData === 'object' &&
+          'data' in transformedData &&
+          'meta' in transformedData
+        ) {
+          return transformedData as { data: T };
+        }
+
         // În caz contrar, înfășoară răspunsul în { data: ... }
         return { data: transformedData };
       }),

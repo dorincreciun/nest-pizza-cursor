@@ -113,7 +113,7 @@ async function bootstrap() {
     res.send(yaml.dump(document));
   });
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`Aplicația rulează pe: http://localhost:${port}`);
   console.log(`Documentația Swagger este disponibilă la: http://localhost:${port}/api`);
