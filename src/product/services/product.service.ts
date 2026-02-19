@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
@@ -67,12 +68,24 @@ export class ProductService {
   }
 
   /**
-   * Returnează produsele: toate dacă categoryId lipsește, sau doar cele din categoria indicată
+   * Returnează produsele cu suport pentru filtrare și paginare
    * @param categoryId - Opțional. Dacă lipsește: toate produsele. Dacă este indicat: filtrare după categorie
-   * @returns Lista de produse
+   * @param types - Opțional. Array de tipuri de produse (SIMPLE, CONFIGURABLE) pentru filtrare
+   * @param ingredients - Opțional. Array de ingrediente pentru filtrare
+   * @param sizes - Opțional. Array de mărimi pentru filtrare
+   * @param page - Opțional. Numărul paginii (default: 1)
+   * @param limit - Opțional. Numărul de produse per pagină (default: 10)
+   * @returns Lista de produse cu meta informații pentru paginare
    * @throws NotFoundException dacă categoryId este indicat dar categoria nu există
    */
-  async findAll(categoryId?: number): Promise<ProductResponseDto[]> {
+  async findAll(
+    categoryId?: number,
+    types?: ProductType[],
+    ingredients?: string[],
+    sizes?: string[],
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<ProductListResponseDto> {
     if (categoryId !== undefined) {
       const category = await this.prisma.category.findUnique({
         where: { id: categoryId },
@@ -84,12 +97,48 @@ export class ProductService {
       }
     }
 
+    // Construiește condițiile de filtrare
+    const where: any = {};
+
+    if (categoryId !== undefined) {
+      where.categoryId = categoryId;
+    }
+
+    if (types && types.length > 0) {
+      where.type = { in: types };
+    }
+
+    if (ingredients && ingredients.length > 0) {
+      where.ingredients = { hasSome: ingredients };
+    }
+
+    if (sizes && sizes.length > 0) {
+      where.sizes = { hasSome: sizes };
+    }
+
+    // Calculează skip pentru paginare
+    const skip = (page - 1) * limit;
+
+    // Obține totalul pentru meta
+    const total = await this.prisma.product.count({ where });
+
+    // Obține produsele cu paginare
     const products = await this.prisma.product.findMany({
-      where: categoryId !== undefined ? { categoryId } : undefined,
+      where,
       orderBy: { createdAt: 'desc' },
       include: { category: true },
+      skip,
+      take: limit,
     });
-    return products.map((p) => this.toResponseDto(p));
+
+    return {
+      data: products.map((p) => this.toResponseDto(p)),
+      meta: {
+        total,
+        page,
+        limit,
+      },
+    };
   }
 
   /**

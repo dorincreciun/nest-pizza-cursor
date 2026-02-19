@@ -26,12 +26,15 @@ import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { Public } from '../../auth/decorators/public.decorator';
+import { ProductType } from '@prisma/client';
 
 /**
  * Controller pentru gestionarea produselor
@@ -39,7 +42,7 @@ import { Public } from '../../auth/decorators/public.decorator';
  */
 @ApiTags('Produse')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductFiltersResponseDto, FilterOptionDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
+@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterOptionDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -103,7 +106,7 @@ export class ProductController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Lista produse',
-    description: 'Fără categoryId: returnează toate produsele, indiferent de categorie. Cu categoryId: returnează doar produsele din categoria respectivă. Rută publică – nu necesită autentificare.',
+    description: 'Returnează lista de produse cu suport pentru filtrare și paginare. Poți filtra după categoryId, types, ingredients, sizes. Rută publică – nu necesită autentificare.',
   })
   @ApiQuery({
     name: 'categoryId',
@@ -112,19 +115,55 @@ export class ProductController {
     description: 'Opțional. Dacă lipsește – toate produsele. Dacă este indicat – doar produsele din acea categorie.',
     example: 1,
   })
+  @ApiQuery({
+    name: 'types',
+    required: false,
+    type: [String],
+    isArray: true,
+    description: 'Opțional. Array de tipuri de produse pentru filtrare. Valori posibile: SIMPLE, CONFIGURABLE. Exemplu: ?types=SIMPLE&types=CONFIGURABLE',
+    example: ['SIMPLE', 'CONFIGURABLE'],
+  })
+  @ApiQuery({
+    name: 'ingredients',
+    required: false,
+    type: [String],
+    isArray: true,
+    description: 'Opțional. Array de ingrediente pentru filtrare. Exemplu: ?ingredients=roșii&ingredients=mozzarella',
+    example: ['roșii', 'mozzarella'],
+  })
+  @ApiQuery({
+    name: 'sizes',
+    required: false,
+    type: [String],
+    isArray: true,
+    description: 'Opțional. Array de mărimi pentru filtrare. Exemplu: ?sizes=mică&sizes=medie',
+    example: ['mică', 'medie'],
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Opțional. Numărul paginii (default: 1). Minim: 1.',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Opțional. Numărul de produse per pagină (default: 10). Minim: 1, Maxim: 100.',
+    example: 10,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Lista de produse',
-    schema: {
-      type: 'object',
-      required: ['data'],
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: getSchemaPath(ProductResponseDto) },
-        },
-      },
-    },
+    description: 'Lista de produse cu meta informații pentru paginare',
+    type: ProductListResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Parametri invalizi (categoryId, page sau limit nu sunt numere valide)',
+    type: ErrorResponseDto,
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: { statusCode: 400, message: 'categoryId trebuie să fie un număr valid', error: 'Bad Request' },
   })
   @ApiResponse({
     status: 404,
@@ -133,12 +172,87 @@ export class ProductController {
     schema: { $ref: getSchemaPath(ErrorResponseDto) },
     example: { statusCode: 404, message: 'Categoria cu ID-ul 999 nu a fost găsită', error: 'Not Found' },
   })
-  async findAll(@Query('categoryId') categoryId?: string) {
+  async findAll(
+    @Query('categoryId') categoryId?: string,
+    @Query('types') types?: string | string[],
+    @Query('ingredients') ingredients?: string | string[],
+    @Query('sizes') sizes?: string | string[],
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    // Parse categoryId
     const parsedCategoryId = categoryId && categoryId.trim() !== '' ? parseInt(categoryId, 10) : undefined;
     if (parsedCategoryId !== undefined && isNaN(parsedCategoryId)) {
       throw new BadRequestException('categoryId trebuie să fie un număr valid');
     }
-    return this.productService.findAll(parsedCategoryId);
+
+    // Parse types (array de ProductType)
+    let parsedTypes: ProductType[] | undefined;
+    if (types) {
+      const typesArray = Array.isArray(types) ? types : [types];
+      parsedTypes = typesArray.filter((t) => t && t.trim() !== '') as ProductType[];
+      // Validare că toate valorile sunt ProductType valide
+      const validTypes: ProductType[] = ['SIMPLE', 'CONFIGURABLE'];
+      const invalidTypes = parsedTypes.filter((t) => !validTypes.includes(t));
+      if (invalidTypes.length > 0) {
+        throw new BadRequestException(
+          `Tipuri invalide: ${invalidTypes.join(', ')}. Valori valide: SIMPLE, CONFIGURABLE`,
+        );
+      }
+      if (parsedTypes.length === 0) {
+        parsedTypes = undefined;
+      }
+    }
+
+    // Parse ingredients (array de string)
+    let parsedIngredients: string[] | undefined;
+    if (ingredients) {
+      parsedIngredients = Array.isArray(ingredients) ? ingredients : [ingredients];
+      parsedIngredients = parsedIngredients.filter((i) => i && i.trim() !== '');
+      if (parsedIngredients.length === 0) {
+        parsedIngredients = undefined;
+      }
+    }
+
+    // Parse sizes (array de string)
+    let parsedSizes: string[] | undefined;
+    if (sizes) {
+      parsedSizes = Array.isArray(sizes) ? sizes : [sizes];
+      parsedSizes = parsedSizes.filter((s) => s && s.trim() !== '');
+      if (parsedSizes.length === 0) {
+        parsedSizes = undefined;
+      }
+    }
+
+    // Parse page (default: 1, minim: 1)
+    let parsedPage = 1;
+    if (page) {
+      parsedPage = parseInt(page, 10);
+      if (isNaN(parsedPage) || parsedPage < 1) {
+        throw new BadRequestException('page trebuie să fie un număr valid mai mare sau egal cu 1');
+      }
+    }
+
+    // Parse limit (default: 10, minim: 1, maxim: 100)
+    let parsedLimit = 10;
+    if (limit) {
+      parsedLimit = parseInt(limit, 10);
+      if (isNaN(parsedLimit) || parsedLimit < 1) {
+        throw new BadRequestException('limit trebuie să fie un număr valid mai mare sau egal cu 1');
+      }
+      if (parsedLimit > 100) {
+        throw new BadRequestException('limit nu poate fi mai mare decât 100');
+      }
+    }
+
+    return this.productService.findAll(
+      parsedCategoryId,
+      parsedTypes,
+      parsedIngredients,
+      parsedSizes,
+      parsedPage,
+      parsedLimit,
+    );
   }
 
   @Get('filters')
