@@ -21,6 +21,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "prisma:seed": "ts-node prisma/seed.ts",
     "generate:types": "npx openapi-typescript http://localhost:3000/api-json -o ./generated/api-types.ts",
     "generate:api-client": "npx swagger-typescript-api -p http://localhost:3000/api-json -o ./generated -n api-client.ts --axios"
   },
@@ -90,5 +91,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

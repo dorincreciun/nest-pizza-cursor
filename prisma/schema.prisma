@@ -52,6 +52,35 @@ model Category {
   status    CategoryStatus @default(ACTIVE)
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
+  products  Product[]
 
   @@map("categories")
+}
+
+enum ProductType {
+  SIMPLE
+  CONFIGURABLE
+}
+
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Product {
+  id          Int          @id @default(autoincrement())
+  slug        String       @unique
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?      @map("image_url")
+  type        ProductType  @default(SIMPLE)
+  status      ItemStatus   @default(ACTIVE)
+  categoryId  Int          @map("category_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId])
+  @@map("products")
 }
