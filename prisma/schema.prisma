@@ -77,6 +77,8 @@ model Product {
   type        ProductType  @default(SIMPLE)
   status      ItemStatus   @default(ACTIVE)
   categoryId  Int          @map("category_id")
+  ingredients String[]     @default([])
+  sizes       String[]     @default([])
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)

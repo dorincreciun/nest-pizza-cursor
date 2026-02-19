@@ -63,6 +63,24 @@ export class ProductResponseDto {
   @Expose()
   category: CategoryResponseDto | null;
 
+  @ApiProperty({
+    example: ['roșii', 'mozzarella', 'busuioc'],
+    description: 'Lista de ingrediente',
+    type: [String],
+    required: true,
+  })
+  @Expose()
+  ingredients: string[];
+
+  @ApiProperty({
+    example: ['mică', 'medie', 'mare'],
+    description: 'Lista de mărimi disponibile',
+    type: [String],
+    required: true,
+  })
+  @Expose()
+  sizes: string[];
+
   @ApiProperty({ example: '2024-01-15T10:30:00.000Z', description: 'Data și ora creării (format ISO 8601)', type: String, required: true })
   @Expose()
   createdAt: string;

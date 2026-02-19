@@ -26,6 +26,8 @@ import { ProductService } from '../services/product.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
+import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
@@ -37,7 +39,7 @@ import { Public } from '../../auth/decorators/public.decorator';
  */
 @ApiTags('Produse')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, ProductResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
+@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductFiltersResponseDto, FilterOptionDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -137,6 +139,53 @@ export class ProductController {
       throw new BadRequestException('categoryId trebuie să fie un număr valid');
     }
     return this.productService.findAll(parsedCategoryId);
+  }
+
+  @Get('filters')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Filtre disponibile pentru produse',
+    description: 'Fără categoryId: returnează filtrele pentru toate produsele ACTIVE. Cu categoryId: returnează filtrele doar pentru produsele ACTIVE din categoria respectivă. Status nu este expus în filtre (doar produsele active sunt disponibile pentru client). Rută publică – nu necesită autentificare.',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: Number,
+    description: 'Opțional. Dacă lipsește – filtre pentru toate produsele ACTIVE. Dacă este indicat – filtre doar pentru produsele ACTIVE din acea categorie.',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Filtrele disponibile',
+    schema: {
+      type: 'object',
+      required: ['data'],
+      properties: {
+        data: { $ref: getSchemaPath(ProductFiltersResponseDto) },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'categoryId invalid',
+    type: ErrorResponseDto,
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: { statusCode: 400, message: 'categoryId trebuie să fie un număr valid', error: 'Bad Request' },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Categoria specificată nu a fost găsită',
+    type: ErrorResponseDto,
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: { statusCode: 404, message: 'Categoria cu ID-ul 999 nu a fost găsită', error: 'Not Found' },
+  })
+  async getFilters(@Query('categoryId') categoryId?: string) {
+    const parsedCategoryId = categoryId && categoryId.trim() !== '' ? parseInt(categoryId, 10) : undefined;
+    if (parsedCategoryId !== undefined && isNaN(parsedCategoryId)) {
+      throw new BadRequestException('categoryId trebuie să fie un număr valid');
+    }
+    return this.productService.getFilters(parsedCategoryId);
   }
 
   @Get(':id')

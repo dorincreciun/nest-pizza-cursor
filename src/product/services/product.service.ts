@@ -8,6 +8,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
+import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
+import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { ProductType, ItemStatus, CategoryStatus } from '@prisma/client';
 
@@ -55,6 +57,8 @@ export class ProductService {
         type: dto.type ?? ProductType.SIMPLE,
         status: dto.status ?? ItemStatus.ACTIVE,
         categoryId: dto.categoryId,
+        ingredients: dto.ingredients ?? [],
+        sizes: dto.sizes ?? [],
       },
       include: { category: true },
     });
@@ -159,6 +163,8 @@ export class ProductService {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
+        ...(dto.ingredients !== undefined && { ingredients: dto.ingredients }),
+        ...(dto.sizes !== undefined && { sizes: dto.sizes }),
       },
       include: { category: true },
     });
@@ -183,6 +189,89 @@ export class ProductService {
     });
   }
 
+  /**
+   * Returnează filtrele disponibile pentru produse (types, ingrediente, mărimi)
+   * Doar produsele ACTIVE sunt incluse în filtre (status nu este expus public)
+   * @param categoryId - Opțional. Dacă lipsește: filtre pentru toate produsele ACTIVE. Dacă este indicat: filtre pentru produsele ACTIVE din categoria respectivă
+   * @returns Filtrele disponibile cu id și name pentru fiecare opțiune
+   * @throws NotFoundException dacă categoryId este indicat dar categoria nu există
+   */
+  async getFilters(categoryId?: number): Promise<ProductFiltersResponseDto> {
+    if (categoryId !== undefined) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        throw new NotFoundException(
+          `Categoria cu ID-ul ${categoryId} nu a fost găsită`,
+        );
+      }
+    }
+
+    // Filtrează doar produsele ACTIVE pentru client
+    const products = await this.prisma.product.findMany({
+      where: {
+        status: ItemStatus.ACTIVE,
+        ...(categoryId !== undefined && { categoryId }),
+      },
+      select: {
+        type: true,
+        ingredients: true,
+        sizes: true,
+      },
+    });
+
+    const typeSet = new Set<ProductType>();
+    const ingredientsSet = new Set<string>();
+    const sizesSet = new Set<string>();
+
+    products.forEach((product) => {
+      typeSet.add(product.type);
+      // Validare defensivă pentru cazul în care Prisma Client nu a fost regenerat
+      if (product.ingredients && Array.isArray(product.ingredients)) {
+        product.ingredients.forEach((ing) => ingredientsSet.add(ing));
+      }
+      if (product.sizes && Array.isArray(product.sizes)) {
+        product.sizes.forEach((size) => sizesSet.add(size));
+      }
+    });
+
+    // Mapare types cu label-uri românești
+    const typeLabels: Record<ProductType, string> = {
+      SIMPLE: 'Simplu',
+      CONFIGURABLE: 'Personalizabil',
+    };
+
+    const types: FilterOptionDto[] = Array.from(typeSet)
+      .sort()
+      .map((type) => ({
+        id: type,
+        name: typeLabels[type],
+      }));
+
+    // Mapare ingredients cu capitalize prima literă
+    const ingredients: FilterOptionDto[] = Array.from(ingredientsSet)
+      .sort()
+      .map((ing) => ({
+        id: ing,
+        name: ing.charAt(0).toUpperCase() + ing.slice(1),
+      }));
+
+    // Mapare sizes cu capitalize prima literă
+    const sizes: FilterOptionDto[] = Array.from(sizesSet)
+      .sort()
+      .map((size) => ({
+        id: size,
+        name: size.charAt(0).toUpperCase() + size.slice(1),
+      }));
+
+    return {
+      types,
+      ingredients,
+      sizes,
+    };
+  }
+
   private toResponseDto(product: {
     id: number;
     slug: string;
@@ -193,6 +282,8 @@ export class ProductService {
     type: ProductType;
     status: ItemStatus;
     categoryId: number;
+    ingredients: string[];
+    sizes: string[];
     createdAt: Date;
     updatedAt: Date;
     category: {
@@ -226,6 +317,8 @@ export class ProductService {
       status: product.status,
       categoryId: product.categoryId,
       category: categoryDto,
+      ingredients: product.ingredients,
+      sizes: product.sizes,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };

@@ -6,9 +6,11 @@ import {
   IsEnum,
   IsOptional,
   IsNotEmpty,
+  IsArray,
   MinLength,
   Min,
   Matches,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProductType, ItemStatus } from '@prisma/client';
@@ -91,4 +93,24 @@ export class CreateProductDto {
   @Min(1, { message: 'categoryId trebuie să fie un număr întreg pozitiv' })
   @Type(() => Number)
   categoryId: number;
+
+  @ApiPropertyOptional({
+    example: ['roșii', 'mozzarella', 'busuioc'],
+    description: 'Lista de ingrediente',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  ingredients?: string[];
+
+  @ApiPropertyOptional({
+    example: ['mică', 'medie', 'mare'],
+    description: 'Lista de mărimi disponibile',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sizes?: string[];
 }

@@ -76,6 +76,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaClasica.id,
+        ingredients: ['roșii', 'mozzarella', 'busuioc'],
+        sizes: ['mică', 'medie', 'mare'],
       },
       // Pizza Clasică - SIMPLE, ACTIVE, fără description, cu imageUrl
       {
@@ -87,6 +89,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaClasica.id,
+        ingredients: ['roșii', 'mozzarella', 'pepperoni'],
+        sizes: ['mică', 'medie', 'mare', 'familie'],
       },
       // Pizza Clasică - SIMPLE, ACTIVE, cu description, fără imageUrl
       {
@@ -98,6 +102,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaClasica.id,
+        ingredients: ['roșii', 'mozzarella', 'ciuperci', 'șuncă', 'măsline', 'artichoci'],
+        sizes: ['medie', 'mare'],
       },
       // Pizza Clasică - SIMPLE, INACTIVE (pentru testare)
       {
@@ -109,6 +115,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.INACTIVE,
         categoryId: pizzaClasica.id,
+        ingredients: ['roșii', 'mozzarella', 'șuncă', 'ciuperci', 'măsline'],
+        sizes: ['mică', 'medie', 'mare'],
       },
       // Pizza Premium - CONFIGURABLE, ACTIVE, cu description și imageUrl
       {
@@ -120,6 +128,8 @@ async function main() {
         type: ProductType.CONFIGURABLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaPremium.id,
+        ingredients: ['trufe negre', 'mozzarella di bufala', 'parmezan', 'ulei de măsline'],
+        sizes: ['medie', 'mare', 'familie'],
       },
       // Pizza Premium - CONFIGURABLE, ACTIVE, fără description, cu imageUrl
       {
@@ -131,6 +141,8 @@ async function main() {
         type: ProductType.CONFIGURABLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaPremium.id,
+        ingredients: ['creveți', 'calamari', 'midii', 'mozzarella', 'sos alb'],
+        sizes: ['mare', 'familie'],
       },
       // Pizza Premium - CONFIGURABLE, INACTIVE
       {
@@ -142,6 +154,8 @@ async function main() {
         type: ProductType.CONFIGURABLE,
         status: ItemStatus.INACTIVE,
         categoryId: pizzaPremium.id,
+        ingredients: ['carne wagyu', 'cheddar', 'sos special', 'ceapă caramelizată'],
+        sizes: ['mare', 'familie'],
       },
       // Pizza Vegetariană - SIMPLE, ACTIVE, cu description și imageUrl
       {
@@ -153,6 +167,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaVegetariana.id,
+        ingredients: ['roșii', 'mozzarella', 'ardei', 'ciuperci', 'măsline', 'ceapă'],
+        sizes: ['mică', 'medie', 'mare'],
       },
       // Pizza Vegetariană - SIMPLE, ACTIVE, fără description, fără imageUrl
       {
@@ -164,6 +180,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaVegetariana.id,
+        ingredients: ['spinaci', 'ricotta', 'mozzarella', 'usturoi'],
+        sizes: ['mică', 'medie'],
       },
       // Pizza Picantă - SIMPLE, ACTIVE (categoria este INACTIVE, dar produsul poate fi ACTIVE)
       {
@@ -175,6 +193,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: pizzaPicanta.id,
+        ingredients: ['roșii', 'mozzarella', 'salam picant', 'ardei iute'],
+        sizes: ['mică', 'medie', 'mare'],
       },
       // Pizza Picantă - CONFIGURABLE, INACTIVE
       {
@@ -186,6 +206,8 @@ async function main() {
         type: ProductType.CONFIGURABLE,
         status: ItemStatus.INACTIVE,
         categoryId: pizzaPicanta.id,
+        ingredients: ['roșii', 'mozzarella', 'jalapeño', 'habanero', 'sos picant', 'ceapă'],
+        sizes: ['mare', 'familie'],
       },
       // Desert - SIMPLE, ACTIVE, cu description și imageUrl
       {
@@ -197,6 +219,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: desert.id,
+        ingredients: ['cafea', 'mascarpone', 'cacao', 'biscuiți', 'zahăr'],
+        sizes: ['portie individuală', 'portie dublă'],
       },
       // Desert - SIMPLE, ACTIVE, fără description, cu imageUrl
       {
@@ -208,6 +232,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.ACTIVE,
         categoryId: desert.id,
+        ingredients: ['smântână', 'zahăr', 'vanilie', 'fructe de pădure'],
+        sizes: ['portie individuală'],
       },
       // Desert - CONFIGURABLE, ACTIVE, cu description, fără imageUrl
       {
@@ -219,6 +245,8 @@ async function main() {
         type: ProductType.CONFIGURABLE,
         status: ItemStatus.ACTIVE,
         categoryId: desert.id,
+        ingredients: ['înghețată artizanală', 'ciocolată', 'vanilie', 'fructe', 'nuci'],
+        sizes: ['1 cupă', '2 cupe', '3 cupe'],
       },
       // Desert - SIMPLE, INACTIVE
       {
@@ -230,6 +258,8 @@ async function main() {
         type: ProductType.SIMPLE,
         status: ItemStatus.INACTIVE,
         categoryId: desert.id,
+        ingredients: ['ricotta', 'ciocolată', 'zahăr pudră', 'coajă crocantă'],
+        sizes: ['2 bucăți', '4 bucăți'],
       },
     ],
   });
