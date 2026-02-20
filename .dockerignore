@@ -3,29 +3,55 @@
 .env.*
 !.env.example
 
-# Dependențe și build local
+# Dependențe și build local (vor fi rebuild-uite în Docker)
 node_modules
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 dist
 coverage
 .build
+*.tsbuildinfo
 
-# Git și IDE
+# Git și IDE (nu sunt necesare în imagine)
 .git
 .gitignore
+.gitattributes
 .idea
 .vscode
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentație (păstrează README.md dacă e necesar)
 *.md
 !README.md
 
-# Teste (nu sunt necesare în imagine)
+# Teste și tooling (nu sunt necesare în imagine)
 test
 *.spec.ts
 .eslintrc*
 .prettierrc*
 jest.config.*
+.prettierignore
 
 # Generated / temporare
 generated
 *.log
+logs
+.tmp
+.cache
+.temp
+*.tmp
+
+# Docker (evită recursivitate)
+docker-compose.override.yml
+.dockerignore
+Dockerfile.dev
+
+# OS
 .DS_Store
+desktop.ini

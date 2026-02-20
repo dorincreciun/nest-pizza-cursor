@@ -1,3 +1,72 @@
+# Dependențe
 node_modules
-.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.bak
+
+# Build și dist
 dist
+build
+*.tsbuildinfo
+
+# Variabile de mediu (nu se includ niciodată în repo)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Coverage și teste
+coverage
+.nyc_output
+*.lcov
+
+# IDE și editori
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Temporary și cache
+.tmp
+.cache
+.temp
+*.tmp
+.cache/
+
+# Generated / temporare
+generated
+*.generated.*
+
+# Prisma (păstrează schema și migrations, exclude generated client)
+# Prisma Client este generat local și în Docker
+# Nu exclude: prisma/schema.prisma, prisma/migrations/
+
+# Docker (păstrează Dockerfile și docker-compose, exclude volumes)
+docker-data/
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*~
