@@ -1,0 +1,20 @@
+# Docker Compose pentru Nest Pizza API
+# Variabilele de mediu se citesc din .env (nu se includ în imagine).
+# Pe VPS: păstrează un fișier .env pe server cu DATABASE_URL, JWT_*, etc.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest-pizza-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    # Pentru deploy pe VPS, asigură-te că .env există pe server și conține:
+    # DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGINS, etc.

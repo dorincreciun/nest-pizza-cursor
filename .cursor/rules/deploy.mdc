@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+
+# Reguli Proiect: Backend cu Prisma, Docker și GitHub Actions CI/CD
+
+## Context General
+Acest proiect rulează într-un container Docker pe un VPS Hostinger și folosește GitHub Actions pentru deployment automat. Orice modificare de cod trebuie să fie compatibilă cu acest flux.
+
+## Reguli de Generare Cod
+1. **Prisma & Bază de Date:**
+   - La orice modificare în `prisma/schema.prisma`, amintește-mi să rulez `npx prisma generate` local și asigură-te că Dockerfile-ul conține acest pas.
+   - Folosește întotdeauna `npx prisma migrate deploy` în scriptul de start al Docker-ului (nu `migrate dev`), pentru a evita ștergerea datelor de pe server.
+
+2. **Docker & Containere:**
+   - Menține Dockerfile-ul folosind structura "Multi-stage build" (Stage 1: Build, Stage 2: Runtime) pentru a optimiza dimensiunea imaginii în CI/CD.
+   - Orice dependență nouă adăugată în `package.json` trebuie să fie reflectată în procesul de build Docker.
+   - Nu include niciodată fișierele `.env` în imaginile Docker; folosește variabile de mediu transmise prin `docker-compose.yml`.
+
+3. **CI/CD (GitHub Actions):**
+   - Orice modificare la structura porturilor sau a variabilelor de mediu critice trebuie să fie însoțită de o notificare pentru a actualiza "GitHub Secrets" (ex: `DATABASE_URL`, `HOSTINGER_IP`).
+   - Dacă modifici fișierul `.github/workflows/deploy.yml`, asigură-te că procesul de `SSH` către Hostinger rămâne securizat și folosește `docker compose pull && docker compose up -d`.
+
+4. **Variabile de Mediu:**
+   - Când adaugi variabile noi în `.env.example`, verifică dacă acestea sunt necesare și în mediul de producție (VPS).
+
+5. **Mentenanță:**
+   - La finalul oricărei modificări majore, verifică dacă `docker-compose.yml` este sincronizat cu noile servicii sau volume adăugate.

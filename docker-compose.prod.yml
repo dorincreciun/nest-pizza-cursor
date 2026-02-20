@@ -1,0 +1,17 @@
+# Docker Compose pentru producție (VPS Hostinger)
+# Folosit de CI/CD: docker compose pull && docker compose up -d
+# Imaginea este construită în GitHub Actions și push-uită în GHCR.
+# Pe server: în .env adaugă GHCR_IMAGE=ghcr.io/OWNER/REPO:latest (ex: ghcr.io/username/nest-pizza-cursor:latest).
+
+services:
+  app:
+    image: ${GHCR_IMAGE}
+    container_name: nest-pizza-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000

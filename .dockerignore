@@ -1,0 +1,31 @@
+# Nu include niciodată .env în imagine
+.env
+.env.*
+!.env.example
+
+# Dependențe și build local
+node_modules
+npm-debug.log*
+dist
+coverage
+.build
+
+# Git și IDE
+.git
+.gitignore
+.idea
+.vscode
+*.md
+!README.md
+
+# Teste (nu sunt necesare în imagine)
+test
+*.spec.ts
+.eslintrc*
+.prettierrc*
+jest.config.*
+
+# Generated / temporare
+generated
+*.log
+.DS_Store
