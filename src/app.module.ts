@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
@@ -13,6 +14,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
  * Modulul principal al aplicației
  * Configurează toate modulele și guard-urile globale
  * Include ConfigModule pentru gestionarea variabilelor de mediu
+ * ThrottlerGuard limitează numărul de request-uri per IP (protecție anti-flood)
  */
 @Module({
   imports: [
@@ -20,12 +22,27 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const ttl = parseInt(config.get('THROTTLE_TTL') ?? '60', 10) * 1000;
+        const limit = parseInt(config.get('THROTTLE_LIMIT') ?? '100', 10);
+        return {
+          throttlers: [{ name: 'short', ttl, limit }],
+        };
+      },
+    }),
     PrismaModule,
     AuthModule,
     CategoryModule,
     ProductModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

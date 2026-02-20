@@ -143,15 +143,8 @@ export class ProductController {
     name: 'page',
     required: false,
     type: Number,
-    description: 'Opțional. Numărul paginii (default: 1). Minim: 1.',
+    description: 'Opțional. Numărul paginii (default: 1). Fiecare pagină are 10 produse.',
     example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Opțional. Numărul de produse per pagină (default: 10). Minim: 1, Maxim: 100.',
-    example: 10,
   })
   @ApiResponse({
     status: 200,
@@ -160,7 +153,7 @@ export class ProductController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Parametri invalizi (categoryId, page sau limit nu sunt numere valide)',
+    description: 'Parametri invalizi (categoryId sau page nu sunt numere valide)',
     type: ErrorResponseDto,
     schema: { $ref: getSchemaPath(ErrorResponseDto) },
     example: { statusCode: 400, message: 'categoryId trebuie să fie un număr valid', error: 'Bad Request' },
@@ -178,7 +171,6 @@ export class ProductController {
     @Query('ingredients') ingredients?: string | string[],
     @Query('sizes') sizes?: string | string[],
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
   ) {
     // Parse categoryId
     const parsedCategoryId = categoryId && categoryId.trim() !== '' ? parseInt(categoryId, 10) : undefined;
@@ -226,23 +218,12 @@ export class ProductController {
 
     // Parse page (default: 1, minim: 1)
     let parsedPage = 1;
-    if (page) {
-      parsedPage = parseInt(page, 10);
-      if (isNaN(parsedPage) || parsedPage < 1) {
+    if (page !== undefined && page !== null && String(page).trim() !== '') {
+      const num = parseInt(String(page).trim(), 10);
+      if (isNaN(num) || num < 1) {
         throw new BadRequestException('page trebuie să fie un număr valid mai mare sau egal cu 1');
       }
-    }
-
-    // Parse limit (default: 10, minim: 1, maxim: 100)
-    let parsedLimit = 10;
-    if (limit) {
-      parsedLimit = parseInt(limit, 10);
-      if (isNaN(parsedLimit) || parsedLimit < 1) {
-        throw new BadRequestException('limit trebuie să fie un număr valid mai mare sau egal cu 1');
-      }
-      if (parsedLimit > 100) {
-        throw new BadRequestException('limit nu poate fi mai mare decât 100');
-      }
+      parsedPage = num;
     }
 
     return this.productService.findAll(
@@ -251,7 +232,6 @@ export class ProductController {
       parsedIngredients,
       parsedSizes,
       parsedPage,
-      parsedLimit,
     );
   }
 

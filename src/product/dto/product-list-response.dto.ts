@@ -5,7 +5,7 @@ import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 
 /**
  * DTO de răspuns pentru lista paginată de produse
- * Conform standardelor API: { data: T[], meta: { total, page, limit } }
+ * Conform standardelor API: { data: T[], meta: { totalItems, currentPage, itemsPerPage, totalPages } }
  * Folosit pentru tipizarea corectă a răspunsului GET /products în Swagger și client.
  */
 export class ProductListResponseDto {

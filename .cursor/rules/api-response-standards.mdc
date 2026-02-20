@@ -12,7 +12,7 @@ Sunteți un expert backend. Respectați aceste reguli pentru a asigura răspunsu
 - **DTO de Output Obligatoriu:** Nu returnați niciodată entitățile brute din baza de date (ex. Prisma). Creați întotdeauna un DTO de răspuns (ex: `UserResponseDto`).
 - **Strict Non-Optional (Regulă Nouă):** În DTO-urile de răspuns, proprietățile **nu trebuie să fie opționale**. Este interzisă folosirea simbolului `?`. Dacă un câmp poate fi nul, acesta trebuie definit explicit ca `string | null`, dar trebuie să fie prezent în obiectul JSON returnat.
 - **Transformare:** Folosiți `@Expose()` și `@Exclude()` din `class-transformer` pentru a filtra datele sensibile (ex: parole, hash-uri).
-- **Format Unitat:** Toate endpoint-urile care returnează liste trebuie să fie înfășurate în structura: `{ "data": T[], "meta": { "total": number, "page": number, "limit": number } }`.
+- **Format Unitat:** Toate endpoint-urile care returnează liste trebuie să fie înfășurate în structura: `{ "data": T[], "meta": { "totalItems": number, "currentPage": number, "itemsPerPage": number, "totalPages": number } }`.
 - **Date Calendaristice:** Toate datele trebuie returnate ca string în format ISO 8601.
 
 ## 2. Decoratori Swagger (Obligatorii)

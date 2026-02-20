@@ -3,30 +3,38 @@ import { Expose } from 'class-transformer';
 
 /**
  * DTO pentru meta-informațiile de paginare
- * Conform standardelor API: toate listele returnează { data: T[], meta: { total, page, limit } }
+ * Conform standardelor API: toate listele returnează { data: T[], meta: { totalItems, currentPage, itemsPerPage, totalPages } }
  */
 export class PaginatedMetaDto {
   @ApiProperty({
     example: 50,
-    description: 'Numărul total de înregistrări care corespund filtrelor',
+    description: 'Numărul total de înregistrări (itemuri) care corespund filtrelor',
     required: true,
   })
   @Expose()
-  total: number;
+  totalItems: number;
 
   @ApiProperty({
     example: 1,
-    description: 'Numărul paginii curente',
+    description: 'Numărul paginii curente (1-based)',
     required: true,
   })
   @Expose()
-  page: number;
+  currentPage: number;
 
   @ApiProperty({
     example: 10,
-    description: 'Numărul de înregistrări per pagină',
+    description: 'Numărul de înregistrări (itemuri) per pagină',
     required: true,
   })
   @Expose()
-  limit: number;
+  itemsPerPage: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Numărul total de pagini disponibile. 0 dacă nu există înregistrări.',
+    required: true,
+  })
+  @Expose()
+  totalPages: number;
 }

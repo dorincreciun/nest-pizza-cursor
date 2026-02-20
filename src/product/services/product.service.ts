@@ -12,7 +12,7 @@ import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
-import { ProductType, ItemStatus, CategoryStatus } from '@prisma/client';
+import { Prisma, ProductType, ItemStatus, CategoryStatus } from '@prisma/client';
 
 /**
  * Serviciu pentru gestionarea produselor
@@ -67,14 +67,16 @@ export class ProductService {
     return this.toResponseDto(product);
   }
 
+  /** Număr fix de produse per pagină pentru GET /products */
+  private static readonly PRODUCTS_PAGE_SIZE = 10;
+
   /**
-   * Returnează produsele cu suport pentru filtrare și paginare
+   * Returnează produsele cu suport pentru filtrare și paginare (10 produse per pagină)
    * @param categoryId - Opțional. Dacă lipsește: toate produsele. Dacă este indicat: filtrare după categorie
    * @param types - Opțional. Array de tipuri de produse (SIMPLE, CONFIGURABLE) pentru filtrare
    * @param ingredients - Opțional. Array de ingrediente pentru filtrare
    * @param sizes - Opțional. Array de mărimi pentru filtrare
-   * @param page - Opțional. Numărul paginii (default: 1)
-   * @param limit - Opțional. Numărul de produse per pagină (default: 10)
+   * @param page - Numărul paginii (1-based)
    * @returns Lista de produse cu meta informații pentru paginare
    * @throws NotFoundException dacă categoryId este indicat dar categoria nu există
    */
@@ -84,7 +86,6 @@ export class ProductService {
     ingredients?: string[],
     sizes?: string[],
     page: number = 1,
-    limit: number = 10,
   ): Promise<ProductListResponseDto> {
     if (categoryId !== undefined) {
       const category = await this.prisma.category.findUnique({
@@ -97,8 +98,12 @@ export class ProductService {
       }
     }
 
-    // Construiește condițiile de filtrare
-    const where: any = {};
+    const pageSize = ProductService.PRODUCTS_PAGE_SIZE;
+    const pageNumber = Math.max(1, Math.floor(Number(page)));
+
+    const where: Prisma.ProductWhereInput = {
+      status: ItemStatus.ACTIVE,
+    };
 
     if (categoryId !== undefined) {
       where.categoryId = categoryId;
@@ -116,27 +121,28 @@ export class ProductService {
       where.sizes = { hasSome: sizes };
     }
 
-    // Calculează skip pentru paginare
-    const skip = (page - 1) * limit;
+    const skip = (pageNumber - 1) * pageSize;
 
-    // Obține totalul pentru meta
-    const total = await this.prisma.product.count({ where });
+    const [total, products] = await this.prisma.$transaction([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        include: { category: true },
+        skip,
+        take: pageSize,
+      }),
+    ]);
 
-    // Obține produsele cu paginare
-    const products = await this.prisma.product.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: { category: true },
-      skip,
-      take: limit,
-    });
+    const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
 
     return {
       data: products.map((p) => this.toResponseDto(p)),
       meta: {
-        total,
-        page,
-        limit,
+        totalItems: total,
+        currentPage: pageNumber,
+        itemsPerPage: pageSize,
+        totalPages,
       },
     };
   }
