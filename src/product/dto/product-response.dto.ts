@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { ProductType, ItemStatus } from '@prisma/client';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
+import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
+import { FilterOptionDto } from './filter-option.dto';
 
 /**
  * DTO de răspuns pentru un produs
@@ -64,22 +66,33 @@ export class ProductResponseDto {
   category: CategoryResponseDto | null;
 
   @ApiProperty({
-    example: ['roșii', 'mozzarella', 'busuioc'],
-    description: 'Lista de ingrediente',
-    type: [String],
+    description: 'Lista de ingrediente (entități cu id, slug, name, imageUrl)',
+    type: IngredientResponseDto,
+    isArray: true,
     required: true,
+    example: [
+      { id: 1, slug: 'rosii', name: 'Roșii', imageUrl: 'https://example.com/images/rosii.jpg' },
+      { id: 2, slug: 'mozzarella', name: 'Mozzarella', imageUrl: null },
+    ],
   })
   @Expose()
-  ingredients: string[];
+  @Type(() => IngredientResponseDto)
+  ingredients: IngredientResponseDto[];
 
   @ApiProperty({
-    example: ['mică', 'medie', 'mare'],
-    description: 'Lista de mărimi disponibile',
-    type: [String],
+    description: 'Lista de mărimi disponibile (id = valoare tehnică, name = etichetă afișare)',
+    type: FilterOptionDto,
+    isArray: true,
     required: true,
+    example: [
+      { id: 'mică', name: 'Mică' },
+      { id: 'medie', name: 'Medie' },
+      { id: 'mare', name: 'Mare' },
+    ],
   })
   @Expose()
-  sizes: string[];
+  @Type(() => FilterOptionDto)
+  sizes: FilterOptionDto[];
 
   @ApiProperty({ example: '2024-01-15T10:30:00.000Z', description: 'Data și ora creării (format ISO 8601)', type: String, required: true })
   @Expose()

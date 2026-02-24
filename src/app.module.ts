@@ -5,6 +5,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
+import { IngredientModule } from './ingredient/ingredient.module';
 import { ProductModule } from './product/product.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -36,6 +37,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
     PrismaModule,
     AuthModule,
     CategoryModule,
+    IngredientModule,
     ProductModule,
   ],
   providers: [

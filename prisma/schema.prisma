@@ -67,21 +67,35 @@ enum ItemStatus {
   INACTIVE
 }
 
+model Ingredient {
+  id                 Int       @id @default(autoincrement())
+  slug               String    @unique
+  name               String
+  imageUrl           String?   @map("image_url")
+  defaultExtraPrice  Float?    @map("default_extra_price")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  products           Product[]
+
+  @@map("ingredients")
+}
+
 model Product {
-  id          Int          @id @default(autoincrement())
-  slug        String       @unique
-  name        String
-  description String?
-  price       Float
-  imageUrl    String?      @map("image_url")
-  type        ProductType  @default(SIMPLE)
-  status      ItemStatus   @default(ACTIVE)
-  categoryId  Int          @map("category_id")
-  ingredients String[]     @default([])
-  sizes       String[]     @default([])
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id                  Int          @id @default(autoincrement())
+  slug                String       @unique
+  name                String
+  description         String?
+  price               Float
+  imageUrl            String?      @map("image_url")
+  type                ProductType  @default(SIMPLE)
+  status              ItemStatus   @default(ACTIVE)
+  categoryId          Int          @map("category_id")
+  sizes               String[]     @default([])
+  sizePriceModifiers  Json?        @map("size_price_modifiers")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  category            Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  ingredients         Ingredient[]
 
   @@index([categoryId])
   @@map("products")

@@ -12,6 +12,7 @@ import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
+import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
 import { Prisma, ProductType, ItemStatus, CategoryStatus } from '@prisma/client';
 
 /**
@@ -48,6 +49,20 @@ export class ProductService {
       );
     }
 
+    if (dto.ingredientIds && dto.ingredientIds.length > 0) {
+      const found = await this.prisma.ingredient.findMany({
+        where: { id: { in: dto.ingredientIds } },
+        select: { id: true },
+      });
+      const foundIds = new Set(found.map((f) => f.id));
+      const missing = dto.ingredientIds.filter((id) => !foundIds.has(id));
+      if (missing.length > 0) {
+        throw new BadRequestException(
+          `Ingrediente cu ID-urile ${missing.join(', ')} nu există`,
+        );
+      }
+    }
+
     const product = await this.prisma.product.create({
       data: {
         slug: dto.slug,
@@ -58,10 +73,12 @@ export class ProductService {
         type: dto.type ?? ProductType.SIMPLE,
         status: dto.status ?? ItemStatus.ACTIVE,
         categoryId: dto.categoryId,
-        ingredients: dto.ingredients ?? [],
         sizes: dto.sizes ?? [],
+        ...(dto.ingredientIds && dto.ingredientIds.length > 0 && {
+          ingredients: { connect: dto.ingredientIds.map((id) => ({ id })) },
+        }),
       },
-      include: { category: true },
+      include: { category: true, ingredients: true },
     });
 
     return this.toResponseDto(product);
@@ -83,7 +100,7 @@ export class ProductService {
   async findAll(
     categoryId?: number,
     types?: ProductType[],
-    ingredients?: string[],
+    ingredientIds?: number[],
     sizes?: string[],
     page: number = 1,
   ): Promise<ProductListResponseDto> {
@@ -113,12 +130,12 @@ export class ProductService {
       where.type = { in: types };
     }
 
-    if (ingredients && ingredients.length > 0) {
-      where.ingredients = { hasSome: ingredients };
-    }
-
     if (sizes && sizes.length > 0) {
       where.sizes = { hasSome: sizes };
+    }
+
+    if (ingredientIds && ingredientIds.length > 0) {
+      where.ingredients = { some: { id: { in: ingredientIds } } };
     }
 
     const skip = (pageNumber - 1) * pageSize;
@@ -128,7 +145,7 @@ export class ProductService {
       this.prisma.product.findMany({
         where,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-        include: { category: true },
+        include: { category: true, ingredients: true },
         skip,
         take: pageSize,
       }),
@@ -156,7 +173,7 @@ export class ProductService {
   async findOne(id: number): Promise<ProductResponseDto> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { category: true },
+      include: { category: true, ingredients: true },
     });
     if (!product) {
       throw new NotFoundException(`Produsul cu ID-ul ${id} nu a fost găsit`);
@@ -207,6 +224,20 @@ export class ProductService {
       }
     }
 
+    if (dto.ingredientIds && dto.ingredientIds.length > 0) {
+      const found = await this.prisma.ingredient.findMany({
+        where: { id: { in: dto.ingredientIds } },
+        select: { id: true },
+      });
+      const foundIds = new Set(found.map((f) => f.id));
+      const missing = dto.ingredientIds.filter((id) => !foundIds.has(id));
+      if (missing.length > 0) {
+        throw new BadRequestException(
+          `Ingrediente cu ID-urile ${missing.join(', ')} nu există`,
+        );
+      }
+    }
+
     const updated = await this.prisma.product.update({
       where: { id },
       data: {
@@ -218,10 +249,12 @@ export class ProductService {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
-        ...(dto.ingredients !== undefined && { ingredients: dto.ingredients }),
         ...(dto.sizes !== undefined && { sizes: dto.sizes }),
+        ...(dto.ingredientIds !== undefined && {
+          ingredients: { set: dto.ingredientIds.map((id) => ({ id })) },
+        }),
       },
-      include: { category: true },
+      include: { category: true, ingredients: true },
     });
 
     return this.toResponseDto(updated);
@@ -271,27 +304,23 @@ export class ProductService {
       },
       select: {
         type: true,
-        ingredients: true,
+        ingredients: { select: { id: true, slug: true, name: true, imageUrl: true } },
         sizes: true,
       },
     });
 
     const typeSet = new Set<ProductType>();
-    const ingredientsSet = new Set<string>();
+    const ingredientIdsSet = new Set<number>();
     const sizesSet = new Set<string>();
 
     products.forEach((product) => {
       typeSet.add(product.type);
-      // Validare defensivă pentru cazul în care Prisma Client nu a fost regenerat
-      if (product.ingredients && Array.isArray(product.ingredients)) {
-        product.ingredients.forEach((ing) => ingredientsSet.add(ing));
-      }
+      product.ingredients?.forEach((ing) => ingredientIdsSet.add(ing.id));
       if (product.sizes && Array.isArray(product.sizes)) {
         product.sizes.forEach((size) => sizesSet.add(size));
       }
     });
 
-    // Mapare types cu label-uri românești
     const typeLabels: Record<ProductType, string> = {
       SIMPLE: 'Simplu',
       CONFIGURABLE: 'Personalizabil',
@@ -304,15 +333,17 @@ export class ProductService {
         name: typeLabels[type],
       }));
 
-    // Mapare ingredients cu capitalize prima literă
-    const ingredients: FilterOptionDto[] = Array.from(ingredientsSet)
-      .sort()
-      .map((ing) => ({
-        id: ing,
-        name: ing.charAt(0).toUpperCase() + ing.slice(1),
-      }));
+    const ingredientIds = Array.from(ingredientIdsSet);
+    const ingredientsList: IngredientResponseDto[] =
+      ingredientIds.length === 0
+        ? []
+        : (
+            await this.prisma.ingredient.findMany({
+              where: { id: { in: ingredientIds } },
+              orderBy: { name: 'asc' },
+            })
+          ).map((i) => ({ id: i.id, slug: i.slug, name: i.name, imageUrl: i.imageUrl }));
 
-    // Mapare sizes cu capitalize prima literă
     const sizes: FilterOptionDto[] = Array.from(sizesSet)
       .sort()
       .map((size) => ({
@@ -322,9 +353,22 @@ export class ProductService {
 
     return {
       types,
-      ingredients,
+      ingredients: ingredientsList,
       sizes,
     };
+  }
+
+  /**
+   * Mapează un array de string-uri la FilterOptionDto[] (sizes)
+   */
+  private mapToFilterOptions(items: string[] | undefined | null): FilterOptionDto[] {
+    if (!items || !Array.isArray(items)) {
+      return [];
+    }
+    return items.map((item) => ({
+      id: item,
+      name: item && item.length > 0 ? item.charAt(0).toUpperCase() + item.slice(1) : item,
+    }));
   }
 
   private toResponseDto(product: {
@@ -337,7 +381,7 @@ export class ProductService {
     type: ProductType;
     status: ItemStatus;
     categoryId: number;
-    ingredients: string[];
+    ingredients: Array<{ id: number; slug: string; name: string; imageUrl: string | null }>;
     sizes: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -361,6 +405,13 @@ export class ProductService {
         }
       : null;
 
+    const ingredientsDto: IngredientResponseDto[] = (product.ingredients ?? []).map((i) => ({
+      id: i.id,
+      slug: i.slug,
+      name: i.name,
+      imageUrl: i.imageUrl,
+    }));
+
     return {
       id: product.id,
       slug: product.slug,
@@ -372,8 +423,8 @@ export class ProductService {
       status: product.status,
       categoryId: product.categoryId,
       category: categoryDto,
-      ingredients: product.ingredients,
-      sizes: product.sizes,
+      ingredients: ingredientsDto,
+      sizes: this.mapToFilterOptions(product.sizes),
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };

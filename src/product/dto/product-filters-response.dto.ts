@@ -1,16 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { FilterOptionDto } from './filter-option.dto';
+import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
 
 /**
  * DTO de răspuns pentru filtrele disponibile ale produselor
- * Structură plată (flat) cu types, ingredients și sizes - toate ca FilterOptionDto[]
- * Fără proprietăți opționale - toate câmpurile sunt obligatorii
+ * types și sizes: FilterOptionDto[]; ingredients: IngredientResponseDto[] (cu id, slug, name, imageUrl)
  */
 export class ProductFiltersResponseDto {
   @ApiProperty({
     description: 'Tipuri de produse disponibile (SIMPLE/CONFIGURABLE)',
-    type: [FilterOptionDto],
+    type: FilterOptionDto,
+    isArray: true,
     required: true,
     example: [
       { id: 'SIMPLE', name: 'Simplu' },
@@ -21,21 +22,19 @@ export class ProductFiltersResponseDto {
   types: FilterOptionDto[];
 
   @ApiProperty({
-    description: 'Ingrediente disponibile în produsele filtrate',
-    type: [FilterOptionDto],
+    description: 'Ingrediente disponibile în produsele filtrate (cu id, slug, name, imageUrl)',
+    type: IngredientResponseDto,
+    isArray: true,
     required: true,
-    example: [
-      { id: 'roșii', name: 'Roșii' },
-      { id: 'mozzarella', name: 'Mozzarella' },
-      { id: 'busuioc', name: 'Busuioc' },
-    ],
   })
   @Expose()
-  ingredients: FilterOptionDto[];
+  @Type(() => IngredientResponseDto)
+  ingredients: IngredientResponseDto[];
 
   @ApiProperty({
-    description: 'Mărimi disponibile în produsele filtrate',
-    type: [FilterOptionDto],
+    description: 'Mărimi disponibile în produsele filtrate (id, name)',
+    type: FilterOptionDto,
+    isArray: true,
     required: true,
     example: [
       { id: 'mică', name: 'Mică' },

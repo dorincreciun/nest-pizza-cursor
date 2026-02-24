@@ -30,6 +30,7 @@ import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
+import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
@@ -42,7 +43,7 @@ import { ProductType } from '@prisma/client';
  */
 @ApiTags('Produse')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterOptionDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
+@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterOptionDto, IngredientResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -126,10 +127,10 @@ export class ProductController {
   @ApiQuery({
     name: 'ingredients',
     required: false,
-    type: [String],
+    type: [Number],
     isArray: true,
-    description: 'Opțional. Array de ingrediente pentru filtrare. Exemplu: ?ingredients=roșii&ingredients=mozzarella',
-    example: ['roșii', 'mozzarella'],
+    description: 'Opțional. Array de ID-uri de ingrediente pentru filtrare. Exemplu: ?ingredients=1&ingredients=2',
+    example: [1, 2],
   })
   @ApiQuery({
     name: 'sizes',
@@ -196,13 +197,13 @@ export class ProductController {
       }
     }
 
-    // Parse ingredients (array de string)
-    let parsedIngredients: string[] | undefined;
+    // Parse ingredients (array de ID-uri de ingrediente)
+    let parsedIngredientIds: number[] | undefined;
     if (ingredients) {
-      parsedIngredients = Array.isArray(ingredients) ? ingredients : [ingredients];
-      parsedIngredients = parsedIngredients.filter((i) => i && i.trim() !== '');
-      if (parsedIngredients.length === 0) {
-        parsedIngredients = undefined;
+      const arr = Array.isArray(ingredients) ? ingredients : [ingredients];
+      const ids = arr.map((i) => parseInt(String(i).trim(), 10)).filter((n) => !isNaN(n) && n >= 1);
+      if (ids.length > 0) {
+        parsedIngredientIds = ids;
       }
     }
 
@@ -229,7 +230,7 @@ export class ProductController {
     return this.productService.findAll(
       parsedCategoryId,
       parsedTypes,
-      parsedIngredients,
+      parsedIngredientIds,
       parsedSizes,
       parsedPage,
     );

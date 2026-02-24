@@ -95,14 +95,15 @@ export class CreateProductDto {
   categoryId: number;
 
   @ApiPropertyOptional({
-    example: ['roșii', 'mozzarella', 'busuioc'],
-    description: 'Lista de ingrediente',
-    type: [String],
+    example: [1, 2, 3],
+    description: 'ID-urile ingredientelor atașate produsului (trebuie să existe în baza de date)',
+    type: [Number],
   })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  ingredients?: string[];
+  @IsInt({ each: true })
+  @Type(() => Number)
+  ingredientIds?: number[];
 
   @ApiPropertyOptional({
     example: ['mică', 'medie', 'mare'],
