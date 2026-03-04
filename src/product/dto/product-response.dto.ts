@@ -66,13 +66,13 @@ export class ProductResponseDto {
   category: CategoryResponseDto | null;
 
   @ApiProperty({
-    description: 'Lista de ingrediente (entități cu id, slug, name, imageUrl)',
+    description: 'Lista de ingrediente (id, slug, name, imageUrl, defaultExtraPrice)',
     type: IngredientResponseDto,
     isArray: true,
     required: true,
     example: [
-      { id: 1, slug: 'rosii', name: 'Roșii', imageUrl: 'https://example.com/images/rosii.jpg' },
-      { id: 2, slug: 'mozzarella', name: 'Mozzarella', imageUrl: null },
+      { id: 1, slug: 'rosii', name: 'Roșii', imageUrl: 'https://example.com/images/rosii.jpg', defaultExtraPrice: 1.5 },
+      { id: 2, slug: 'mozzarella', name: 'Mozzarella', imageUrl: null, defaultExtraPrice: 2.5 },
     ],
   })
   @Expose()
@@ -80,14 +80,14 @@ export class ProductResponseDto {
   ingredients: IngredientResponseDto[];
 
   @ApiProperty({
-    description: 'Lista de mărimi disponibile (id = valoare tehnică, name = etichetă afișare)',
+    description: 'Lista de mărimi disponibile (id numeric: 1=mică, 2=medie, 3=mare, 4=familie; name = etichetă afișare)',
     type: FilterOptionDto,
     isArray: true,
     required: true,
     example: [
-      { id: 'mică', name: 'Mică' },
-      { id: 'medie', name: 'Medie' },
-      { id: 'mare', name: 'Mare' },
+      { id: 1, name: 'Mică' },
+      { id: 2, name: 'Medie' },
+      { id: 3, name: 'Mare' },
     ],
   })
   @Expose()

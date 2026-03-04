@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNotEmpty, MinLength, Matches } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, MinLength, Matches, IsNumber } from 'class-validator';
 
 /**
  * DTO pentru crearea unui ingredient
@@ -34,4 +34,12 @@ export class CreateIngredientDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional({
+    example: 2.5,
+    description: 'Prețul suplimentar implicit la adăugarea ingredientului (lei). Opțional.',
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'defaultExtraPrice trebuie să fie un număr' })
+  defaultExtraPrice?: number;
 }

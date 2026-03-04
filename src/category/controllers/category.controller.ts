@@ -24,6 +24,7 @@ import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { CategoryResponseDto } from '../dto/category-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 
@@ -33,7 +34,7 @@ import { Public } from '../../auth/decorators/public.decorator';
  */
 @ApiTags('Categorii')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, CategoryResponseDto, CreateCategoryDto, UpdateCategoryDto)
+@ApiExtraModels(ErrorResponseDto, CategoryResponseDto, PaginatedMetaDto, CreateCategoryDto, UpdateCategoryDto)
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -101,15 +102,16 @@ export class CategoryController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de categorii',
+    description: 'Lista de categorii cu meta pentru paginare',
     schema: {
       type: 'object',
-      required: ['data'],
+      required: ['data', 'meta'],
       properties: {
         data: {
           type: 'array',
           items: { $ref: getSchemaPath(CategoryResponseDto) },
         },
+        meta: { $ref: getSchemaPath(PaginatedMetaDto) },
       },
     },
   })

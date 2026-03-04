@@ -1,47 +1,38 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { FilterOptionDto } from './filter-option.dto';
-import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
+import { FilterSectionDto } from './filter-section.dto';
 
 /**
- * DTO de răspuns pentru filtrele disponibile ale produselor
- * types și sizes: FilterOptionDto[]; ingredients: IngredientResponseDto[] (cu id, slug, name, imageUrl)
+ * DTO de răspuns pentru filtrele disponibile ale produselor.
+ * Listă de secțiuni: fiecare are name (ex. "Tipuri", "Ingrediente", "Mărimi") și options.
  */
 export class ProductFiltersResponseDto {
   @ApiProperty({
-    description: 'Tipuri de produse disponibile (SIMPLE/CONFIGURABLE)',
-    type: FilterOptionDto,
+    description: 'Lista de secțiuni de filtre. Fiecare secțiune are name, url_key și options.',
+    type: FilterSectionDto,
     isArray: true,
     required: true,
     example: [
-      { id: 'SIMPLE', name: 'Simplu' },
-      { id: 'CONFIGURABLE', name: 'Personalizabil' },
+      {
+        name: 'Tipuri',
+        url_key: 'types',
+        options: [
+          { id: 1, name: 'Simplu' },
+          { id: 2, name: 'Personalizabil' },
+        ],
+      },
+      {
+        name: 'Mărimi',
+        url_key: 'sizes',
+        options: [
+          { id: 1, name: 'Mică' },
+          { id: 2, name: 'Medie' },
+          { id: 3, name: 'Mare' },
+        ],
+      },
     ],
   })
   @Expose()
-  types: FilterOptionDto[];
-
-  @ApiProperty({
-    description: 'Ingrediente disponibile în produsele filtrate (cu id, slug, name, imageUrl)',
-    type: IngredientResponseDto,
-    isArray: true,
-    required: true,
-  })
-  @Expose()
-  @Type(() => IngredientResponseDto)
-  ingredients: IngredientResponseDto[];
-
-  @ApiProperty({
-    description: 'Mărimi disponibile în produsele filtrate (id, name)',
-    type: FilterOptionDto,
-    isArray: true,
-    required: true,
-    example: [
-      { id: 'mică', name: 'Mică' },
-      { id: 'medie', name: 'Medie' },
-      { id: 'mare', name: 'Mare' },
-    ],
-  })
-  @Expose()
-  sizes: FilterOptionDto[];
+  @Type(() => FilterSectionDto)
+  filters: FilterSectionDto[];
 }

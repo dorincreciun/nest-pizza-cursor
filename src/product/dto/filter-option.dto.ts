@@ -2,17 +2,19 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
 /**
- * DTO reutilizabil pentru o opțiune de filtru
- * Conține valoarea tehnică (id) și eticheta pentru UI (name)
+ * DTO reutilizabil pentru o opțiune de filtru.
+ * Conține identificatorul numeric (id) și eticheta pentru afișare în UI (name).
+ * Folosit pentru tipuri de produs (SIMPLE/CONFIGURABLE) și mărimi (mică, medie, mare, familie).
  */
 export class FilterOptionDto {
   @ApiProperty({
-    example: 'CONFIGURABLE',
-    description: 'Valoarea tehnică a filtrului (trimisă la server)',
+    example: 2,
+    description: 'Identificatorul numeric al opțiunii (trimis la server la filtrare)',
     required: true,
+    type: Number,
   })
   @Expose()
-  id: string;
+  id: number;
 
   @ApiProperty({
     example: 'Personalizabil',

@@ -24,6 +24,7 @@ import { CreateIngredientDto } from '../dto/create-ingredient.dto';
 import { UpdateIngredientDto } from '../dto/update-ingredient.dto';
 import { IngredientResponseDto } from '../dto/ingredient-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 
@@ -33,7 +34,7 @@ import { Public } from '../../auth/decorators/public.decorator';
  */
 @ApiTags('Ingrediente')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, IngredientResponseDto, CreateIngredientDto, UpdateIngredientDto)
+@ApiExtraModels(ErrorResponseDto, IngredientResponseDto, PaginatedMetaDto, CreateIngredientDto, UpdateIngredientDto)
 @Controller('ingredients')
 export class IngredientController {
   constructor(private readonly ingredientService: IngredientService) {}
@@ -85,11 +86,14 @@ export class IngredientController {
   @ApiOperation({ summary: 'Lista ingrediente', description: 'Toate ingredientele. Rută publică.' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de ingrediente (toate cu imageUrl null dacă nu au imagine)',
+    description: 'Lista de ingrediente cu meta pentru paginare',
     schema: {
       type: 'object',
-      required: ['data'],
-      properties: { data: { type: 'array', items: { $ref: getSchemaPath(IngredientResponseDto) } } },
+      required: ['data', 'meta'],
+      properties: {
+        data: { type: 'array', items: { $ref: getSchemaPath(IngredientResponseDto) } },
+        meta: { $ref: getSchemaPath(PaginatedMetaDto) },
+      },
     },
   })
   async findAll() {
@@ -126,6 +130,13 @@ export class IngredientController {
     schema: { type: 'object', required: ['data'], properties: { data: { $ref: getSchemaPath(IngredientResponseDto) } } },
   })
   @ApiResponse({
+    status: 401,
+    description: 'Neautorizat',
+    type: ErrorResponseDto,
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: { statusCode: 401, message: 'Token invalid sau expirat', error: 'Unauthorized' },
+  })
+  @ApiResponse({
     status: 404,
     description: 'Ingredient negăsit',
     type: ErrorResponseDto,
@@ -134,7 +145,7 @@ export class IngredientController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Doar administratorii',
+    description: 'Doar administratorii pot actualiza ingrediente',
     type: ErrorResponseDto,
     schema: { $ref: getSchemaPath(ErrorResponseDto) },
     example: { statusCode: 403, message: 'Doar administratorii pot efectua această acțiune', error: 'Forbidden' },
@@ -149,6 +160,13 @@ export class IngredientController {
   @ApiOperation({ summary: 'Ștergere ingredient' })
   @ApiResponse({ status: 204, description: 'Ingredient șters' })
   @ApiResponse({
+    status: 401,
+    description: 'Neautorizat',
+    type: ErrorResponseDto,
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: { statusCode: 401, message: 'Token invalid sau expirat', error: 'Unauthorized' },
+  })
+  @ApiResponse({
     status: 404,
     description: 'Ingredient negăsit',
     type: ErrorResponseDto,
@@ -157,7 +175,7 @@ export class IngredientController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Doar administratorii',
+    description: 'Doar administratorii pot șterge ingrediente',
     type: ErrorResponseDto,
     schema: { $ref: getSchemaPath(ErrorResponseDto) },
     example: { statusCode: 403, message: 'Doar administratorii pot efectua această acțiune', error: 'Forbidden' },

@@ -15,8 +15,33 @@ import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
 import { Prisma, ProductType, ItemStatus, CategoryStatus } from '@prisma/client';
 
+/** Mapare ID numeric -> ProductType pentru filtre (GET /products?types=1&types=2) */
+export const PRODUCT_TYPE_ID_TO_ENUM: Record<number, ProductType> = {
+  1: ProductType.SIMPLE,
+  2: ProductType.CONFIGURABLE,
+};
+
+/** Mapare ProductType -> ID numeric pentru răspunsul de filtre */
+export const PRODUCT_TYPE_ENUM_TO_ID: Record<ProductType, number> = {
+  [ProductType.SIMPLE]: 1,
+  [ProductType.CONFIGURABLE]: 2,
+};
+
+/** Mapare slug mărime -> ID numeric pentru filtre și răspunsuri */
+export const SIZE_SLUG_TO_ID: Record<string, number> = {
+  mică: 1,
+  medie: 2,
+  mare: 3,
+  familie: 4,
+};
+
+/** Mapare ID numeric -> slug mărime */
+export const SIZE_ID_TO_SLUG: Record<number, string> = Object.fromEntries(
+  Object.entries(SIZE_SLUG_TO_ID).map(([slug, id]) => [id, slug]),
+);
+
 /**
- * Serviciu pentru gestionarea produselor
+ * Serviciu pentru gestionarea produselor.
  * CRUD cu validare categoryId și slug unic. Rezultatele sunt mapate la ProductResponseDto.
  */
 @Injectable()
@@ -329,7 +354,7 @@ export class ProductService {
     const types: FilterOptionDto[] = Array.from(typeSet)
       .sort()
       .map((type) => ({
-        id: type,
+        id: PRODUCT_TYPE_ENUM_TO_ID[type],
         name: typeLabels[type],
       }));
 
@@ -342,31 +367,35 @@ export class ProductService {
               where: { id: { in: ingredientIds } },
               orderBy: { name: 'asc' },
             })
-          ).map((i) => ({ id: i.id, slug: i.slug, name: i.name, imageUrl: i.imageUrl }));
+          ).map((i) => ({ id: i.id, slug: i.slug, name: i.name, imageUrl: i.imageUrl, defaultExtraPrice: i.defaultExtraPrice }));
 
     const sizes: FilterOptionDto[] = Array.from(sizesSet)
       .sort()
       .map((size) => ({
-        id: size,
+        id: SIZE_SLUG_TO_ID[size] ?? 100 + Array.from(sizesSet).indexOf(size),
         name: size.charAt(0).toUpperCase() + size.slice(1),
       }));
 
     return {
-      types,
-      ingredients: ingredientsList,
-      sizes,
+      filters: [
+        { name: 'Tipuri', url_key: 'types', options: types },
+        { name: 'Ingrediente', url_key: 'ingredients', options: ingredientsList },
+        { name: 'Mărimi', url_key: 'sizes', options: sizes },
+      ],
     };
   }
 
   /**
-   * Mapează un array de string-uri la FilterOptionDto[] (sizes)
+   * Mapează un array de slug-uri de mărimi la FilterOptionDto[] (id numeric, name pentru UI).
+   * @param items - Slug-uri din baza de date (ex: ['mică', 'medie', 'mare'])
+   * @returns FilterOptionDto[] cu id numeric și name formatat
    */
   private mapToFilterOptions(items: string[] | undefined | null): FilterOptionDto[] {
     if (!items || !Array.isArray(items)) {
       return [];
     }
     return items.map((item) => ({
-      id: item,
+      id: SIZE_SLUG_TO_ID[item] ?? 99,
       name: item && item.length > 0 ? item.charAt(0).toUpperCase() + item.slice(1) : item,
     }));
   }
@@ -381,7 +410,7 @@ export class ProductService {
     type: ProductType;
     status: ItemStatus;
     categoryId: number;
-    ingredients: Array<{ id: number; slug: string; name: string; imageUrl: string | null }>;
+    ingredients: Array<{ id: number; slug: string; name: string; imageUrl: string | null; defaultExtraPrice: number | null }>;
     sizes: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -410,6 +439,7 @@ export class ProductService {
       slug: i.slug,
       name: i.name,
       imageUrl: i.imageUrl,
+      defaultExtraPrice: i.defaultExtraPrice ?? null,
     }));
 
     return {

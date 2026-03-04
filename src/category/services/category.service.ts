@@ -45,14 +45,25 @@ export class CategoryService {
   }
 
   /**
-   * Returnează toate categoriile
-   * @returns Lista de categorii
+   * Returnează toate categoriile în format paginat (un singur „batch” – fără paginare reală).
+   * Conform standardelor API: { data: T[], meta: { totalItems, currentPage, itemsPerPage, totalPages } }.
+   * @returns Obiect cu data (lista de categorii) și meta (totalItems, currentPage, itemsPerPage, totalPages)
    */
-  async findAll(): Promise<CategoryResponseDto[]> {
+  async findAll(): Promise<{ data: CategoryResponseDto[]; meta: { totalItems: number; currentPage: number; itemsPerPage: number; totalPages: number } }> {
     const categories = await this.prisma.category.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return categories.map((c) => this.toResponseDto(c));
+    const data = categories.map((c) => this.toResponseDto(c));
+    const totalItems = data.length;
+    return {
+      data,
+      meta: {
+        totalItems,
+        currentPage: 1,
+        itemsPerPage: totalItems === 0 ? 0 : totalItems,
+        totalPages: totalItems === 0 ? 0 : 1,
+      },
+    };
   }
 
   /**

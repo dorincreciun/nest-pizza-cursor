@@ -19,11 +19,20 @@ export class IngredientResponseDto {
   name: string;
 
   @ApiProperty({
-    example: null,
+    example: '/ingredient-img/example.png',
     description: 'URL-ul imaginii ingredientului. Null dacă nu există imagine.',
     required: true,
     nullable: true,
   })
   @Expose()
   imageUrl: string | null;
+
+  @ApiProperty({
+    example: 2.5,
+    description: 'Prețul suplimentar implicit la adăugarea ingredientului (lei). Null dacă nu se aplică.',
+    required: true,
+    nullable: true,
+  })
+  @Expose()
+  defaultExtraPrice: number | null;
 }

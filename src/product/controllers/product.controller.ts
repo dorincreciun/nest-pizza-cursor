@@ -28,6 +28,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductResponseDto } from '../dto/product-response.dto';
 import { ProductListResponseDto } from '../dto/product-list-response.dto';
 import { ProductFiltersResponseDto } from '../dto/product-filters-response.dto';
+import { FilterSectionDto } from '../dto/filter-section.dto';
 import { FilterOptionDto } from '../dto/filter-option.dto';
 import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
@@ -36,6 +37,10 @@ import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 import { ProductType } from '@prisma/client';
+import {
+  PRODUCT_TYPE_ID_TO_ENUM,
+  SIZE_ID_TO_SLUG,
+} from '../services/product.service';
 
 /**
  * Controller pentru gestionarea produselor
@@ -43,7 +48,7 @@ import { ProductType } from '@prisma/client';
  */
 @ApiTags('Produse')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterOptionDto, IngredientResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
+@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterSectionDto, FilterOptionDto, IngredientResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -119,10 +124,10 @@ export class ProductController {
   @ApiQuery({
     name: 'types',
     required: false,
-    type: [String],
+    type: [Number],
     isArray: true,
-    description: 'Opțional. Array de tipuri de produse pentru filtrare. Valori posibile: SIMPLE, CONFIGURABLE. Exemplu: ?types=SIMPLE&types=CONFIGURABLE',
-    example: ['SIMPLE', 'CONFIGURABLE'],
+    description: 'Opțional. ID-uri numerice: 1=SIMPLE, 2=CONFIGURABLE. Exemplu: ?types=1&types=2',
+    example: [1, 2],
   })
   @ApiQuery({
     name: 'ingredients',
@@ -135,10 +140,10 @@ export class ProductController {
   @ApiQuery({
     name: 'sizes',
     required: false,
-    type: [String],
+    type: [Number],
     isArray: true,
-    description: 'Opțional. Array de mărimi pentru filtrare. Exemplu: ?sizes=mică&sizes=medie',
-    example: ['mică', 'medie'],
+    description: 'Opțional. ID-uri numerice: 1=mică, 2=medie, 3=mare, 4=familie. Exemplu: ?sizes=1&sizes=2',
+    example: [1, 2],
   })
   @ApiQuery({
     name: 'page',
@@ -150,7 +155,17 @@ export class ProductController {
   @ApiResponse({
     status: 200,
     description: 'Lista de produse cu meta informații pentru paginare',
-    type: ProductListResponseDto,
+    schema: {
+      type: 'object',
+      required: ['data', 'meta'],
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(ProductResponseDto) },
+        },
+        meta: { $ref: getSchemaPath(PaginatedMetaDto) },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -179,21 +194,26 @@ export class ProductController {
       throw new BadRequestException('categoryId trebuie să fie un număr valid');
     }
 
-    // Parse types (array de ProductType)
+    // Parse types: acceptă ID numerici (1=SIMPLE, 2=CONFIGURABLE) sau string-uri enum
     let parsedTypes: ProductType[] | undefined;
     if (types) {
       const typesArray = Array.isArray(types) ? types : [types];
-      parsedTypes = typesArray.filter((t) => t && t.trim() !== '') as ProductType[];
-      // Validare că toate valorile sunt ProductType valide
-      const validTypes: ProductType[] = ['SIMPLE', 'CONFIGURABLE'];
-      const invalidTypes = parsedTypes.filter((t) => !validTypes.includes(t));
-      if (invalidTypes.length > 0) {
-        throw new BadRequestException(
-          `Tipuri invalide: ${invalidTypes.join(', ')}. Valori valide: SIMPLE, CONFIGURABLE`,
-        );
+      const resolved: ProductType[] = [];
+      for (const t of typesArray) {
+        if (t == null || String(t).trim() === '') continue;
+        const num = parseInt(String(t).trim(), 10);
+        if (!isNaN(num) && PRODUCT_TYPE_ID_TO_ENUM[num]) {
+          resolved.push(PRODUCT_TYPE_ID_TO_ENUM[num]);
+        } else if (t === 'SIMPLE' || t === 'CONFIGURABLE') {
+          resolved.push(t as ProductType);
+        } else {
+          throw new BadRequestException(
+            `Tip invalid: ${t}. Valori valide: 1 (SIMPLE), 2 (CONFIGURABLE) sau SIMPLE, CONFIGURABLE`,
+          );
+        }
       }
-      if (parsedTypes.length === 0) {
-        parsedTypes = undefined;
+      if (resolved.length > 0) {
+        parsedTypes = resolved;
       }
     }
 
@@ -207,13 +227,22 @@ export class ProductController {
       }
     }
 
-    // Parse sizes (array de string)
+    // Parse sizes: acceptă ID numerici (1=mică, 2=medie, 3=mare, 4=familie) sau slug-uri
     let parsedSizes: string[] | undefined;
     if (sizes) {
-      parsedSizes = Array.isArray(sizes) ? sizes : [sizes];
-      parsedSizes = parsedSizes.filter((s) => s && s.trim() !== '');
-      if (parsedSizes.length === 0) {
-        parsedSizes = undefined;
+      const sizesArray = Array.isArray(sizes) ? sizes : [sizes];
+      const resolved: string[] = [];
+      for (const s of sizesArray) {
+        if (s == null || String(s).trim() === '') continue;
+        const num = parseInt(String(s).trim(), 10);
+        if (!isNaN(num) && SIZE_ID_TO_SLUG[num]) {
+          resolved.push(SIZE_ID_TO_SLUG[num]);
+        } else {
+          resolved.push(String(s).trim());
+        }
+      }
+      if (resolved.length > 0) {
+        parsedSizes = resolved;
       }
     }
 

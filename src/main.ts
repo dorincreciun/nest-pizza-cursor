@@ -1,16 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
+import { join } from 'path';
+import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 import * as yaml from 'js-yaml';
 import { AppModule } from './app.module';
 
 /**
  * Punctul de intrare al aplicației NestJS
- * Configurează aplicația, validarea și documentația Swagger
+ * Configurează aplicația, validarea, fișierele statice și documentația Swagger
  */
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Servire imagini din public/ (pizza-img, ingredient-img). Calea funcționează atât din dist/ cât din root.
+  const publicPath = join(process.cwd(), 'public');
+  app.use(express.static(publicPath));
 
   // Configurare cookie parser pentru refresh token
   app.use(cookieParser());
@@ -102,13 +110,13 @@ async function bootstrap() {
   });
 
   // Endpoint pentru schema JSON (pentru generarea tipurilor)
-  app.getHttpAdapter().get('/api-json', (req, res) => {
+  app.getHttpAdapter().get('/api-json', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(document);
   });
 
   // Endpoint pentru schema YAML
-  app.getHttpAdapter().get('/api-yaml', (req, res) => {
+  app.getHttpAdapter().get('/api-yaml', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/yaml');
     res.send(yaml.dump(document));
   });
