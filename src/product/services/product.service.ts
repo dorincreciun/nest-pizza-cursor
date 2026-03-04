@@ -113,12 +113,15 @@ export class ProductService {
   private static readonly PRODUCTS_PAGE_SIZE = 10;
 
   /**
-   * Returnează produsele cu suport pentru filtrare și paginare (10 produse per pagină)
+   * Returnează produsele cu suport pentru filtrare și paginare (10 produse per pagină).
+   * Dacă userId este furnizat (utilizator logat), fiecare produs va conține și cartQuantity
+   * care indică cantitatea produsului în coșul utilizatorului.
    * @param categoryId - Opțional. Dacă lipsește: toate produsele. Dacă este indicat: filtrare după categorie
    * @param types - Opțional. Array de tipuri de produse (SIMPLE, CONFIGURABLE) pentru filtrare
-   * @param ingredients - Opțional. Array de ingrediente pentru filtrare
+   * @param ingredientIds - Opțional. Array de ingrediente pentru filtrare
    * @param sizes - Opțional. Array de mărimi pentru filtrare
    * @param page - Numărul paginii (1-based)
+   * @param userId - Opțional. ID-ul utilizatorului logat pentru calculul cantității din coș
    * @returns Lista de produse cu meta informații pentru paginare
    * @throws NotFoundException dacă categoryId este indicat dar categoria nu există
    */
@@ -128,6 +131,7 @@ export class ProductService {
     ingredientIds?: number[],
     sizes?: string[],
     page: number = 1,
+    userId?: string,
   ): Promise<ProductListResponseDto> {
     if (categoryId !== undefined) {
       const category = await this.prisma.category.findUnique({
@@ -176,10 +180,35 @@ export class ProductService {
       }),
     ]);
 
+    let cartQuantityByProductId: Record<number, number> = {};
+
+    if (userId) {
+      const cartItems = await this.prisma.cartItem.findMany({
+        where: { userId },
+        select: {
+          productId: true,
+          quantity: true,
+        },
+      });
+
+      cartQuantityByProductId = cartItems.reduce<Record<number, number>>(
+        (acc, item) => {
+          acc[item.productId] = item.quantity;
+          return acc;
+        },
+        {},
+      );
+    }
+
     const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
 
     return {
-      data: products.map((p) => this.toResponseDto(p)),
+      data: products.map((p) =>
+        this.toResponseDto(
+          p,
+          userId ? cartQuantityByProductId[p.id] ?? null : null,
+        ),
+      ),
       meta: {
         totalItems: total,
         currentPage: pageNumber,
@@ -400,7 +429,8 @@ export class ProductService {
     }));
   }
 
-  private toResponseDto(product: {
+  private toResponseDto(
+    product: {
     id: number;
     slug: string;
     name: string;
@@ -422,7 +452,9 @@ export class ProductService {
       createdAt: Date;
       updatedAt: Date;
     } | null;
-  }): ProductResponseDto {
+    },
+    cartQuantity: number | null = null,
+  ): ProductResponseDto {
     const categoryDto: CategoryResponseDto | null = product.category
       ? {
           id: product.category.id,
@@ -455,6 +487,7 @@ export class ProductService {
       category: categoryDto,
       ingredients: ingredientsDto,
       sizes: this.mapToFilterOptions(product.sizes),
+      cartQuantity,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };

@@ -18,6 +18,7 @@ model User {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
   refreshTokens RefreshToken[]
+  cartItems   CartItem[]
 
   @@map("users")
 }
@@ -96,7 +97,25 @@ model Product {
   updatedAt           DateTime     @updatedAt @map("updated_at")
   category            Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   ingredients         Ingredient[]
+  cartItems           CartItem[]
 
   @@index([categoryId])
   @@map("products")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  productId Int      @map("product_id")
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("cart_items")
 }

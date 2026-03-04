@@ -1,17 +1,17 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
-  ParseIntPipe,
+  BadRequestException,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -35,12 +35,15 @@ import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
+import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import { Public } from '../../auth/decorators/public.decorator';
 import { ProductType } from '@prisma/client';
 import {
   PRODUCT_TYPE_ID_TO_ENUM,
   SIZE_ID_TO_SLUG,
 } from '../services/product.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { UserResponseDto } from '../../auth/dto/user-response.dto';
 
 /**
  * Controller pentru gestionarea produselor
@@ -109,6 +112,7 @@ export class ProductController {
 
   @Get()
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Lista produse',
@@ -187,6 +191,7 @@ export class ProductController {
     @Query('ingredients') ingredients?: string | string[],
     @Query('sizes') sizes?: string | string[],
     @Query('page') page?: string,
+    @CurrentUser() currentUser?: UserResponseDto | null,
   ) {
     // Parse categoryId
     const parsedCategoryId = categoryId && categoryId.trim() !== '' ? parseInt(categoryId, 10) : undefined;
@@ -262,6 +267,7 @@ export class ProductController {
       parsedIngredientIds,
       parsedSizes,
       parsedPage,
+      currentUser?.id,
     );
   }
 

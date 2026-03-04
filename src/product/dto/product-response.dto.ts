@@ -94,6 +94,17 @@ export class ProductResponseDto {
   @Type(() => FilterOptionDto)
   sizes: FilterOptionDto[];
 
+  @ApiProperty({
+    example: 2,
+    description:
+      'Cantitatea totală din acest produs aflată în coșul utilizatorului logat. ' +
+      'Pentru utilizatorii nelogați sau atunci când produsul nu este în coș, valoarea este null.',
+    required: true,
+    nullable: true,
+  })
+  @Expose()
+  cartQuantity: number | null;
+
   @ApiProperty({ example: '2024-01-15T10:30:00.000Z', description: 'Data și ora creării (format ISO 8601)', type: String, required: true })
   @Expose()
   createdAt: string;
