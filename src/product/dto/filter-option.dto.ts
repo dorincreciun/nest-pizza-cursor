@@ -3,8 +3,10 @@ import { Expose } from 'class-transformer';
 
 /**
  * DTO reutilizabil pentru o opțiune de filtru.
- * Conține identificatorul numeric (id) și eticheta pentru afișare în UI (name).
- * Folosit pentru tipuri de produs (SIMPLE/CONFIGURABLE) și mărimi (mică, medie, mare, familie).
+ * Conține identificatorul numeric (id), eticheta pentru afișare în UI (name)
+ * și, opțional, un preț suplimentar (extraPrice) față de prețul de bază.
+ * Folosit pentru tipuri de produs (SIMPLE/CONFIGURABLE), mărimi (mică, medie, mare, familie)
+ * și orice altă opțiune care poate modifica logica produsului.
  */
 export class FilterOptionDto {
   @ApiProperty({
@@ -23,4 +25,16 @@ export class FilterOptionDto {
   })
   @Expose()
   name: string;
+
+  @ApiProperty({
+    example: 5,
+    description:
+      'Prețul suplimentar (în lei) față de prețul de bază al produsului pentru această opțiune. ' +
+      'Null în cazul în care opțiunea nu modifică prețul (ex: tip produs folosit doar pentru filtrare).',
+    required: true,
+    nullable: true,
+    type: Number,
+  })
+  @Expose()
+  extraPrice: number | null;
 }

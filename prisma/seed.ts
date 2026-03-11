@@ -1,4 +1,4 @@
-import { PrismaClient, CategoryStatus, ProductType, ItemStatus } from '@prisma/client';
+import { PrismaClient, CategoryStatus, ProductType, ItemStatus, Role } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -362,6 +362,17 @@ async function main() {
   }
 
   console.log(`✅ Created ${pizzaProducts.length} products with images from pizza-img`);
+
+  // Acordă drepturi de admin utilizatorului john.doe@example.com dacă există
+  const adminEmail = 'john.doe@example.com';
+  const adminUser = await prisma.user.updateMany({
+    where: { email: adminEmail },
+    data: { rol: Role.ADMIN },
+  });
+  if (adminUser.count > 0) {
+    console.log(`✅ Set role ADMIN for ${adminEmail}`);
+  }
+
   console.log('🎉 Seeding completed successfully!');
 }
 

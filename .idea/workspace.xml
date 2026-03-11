@@ -4,14 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8a9ab2c0-814f-4233-acb9-b2dc80bb97e1" name="Changes" comment="feat fix server" />
+    <list default="true" id="8a9ab2c0-814f-4233-acb9-b2dc80bb97e1" name="Changes" comment="feat fix server">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/product/dto/create-product.dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/product/dto/create-product.dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/product/dto/filter-option.dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/product/dto/filter-option.dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/product/dto/product-response.dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/product/dto/product-response.dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/product/services/product.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/product/services/product.service.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="66" />
+    <option name="cachedIndexableFilesCount" value="129" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -101,7 +108,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.31033.133" />
       </set>
     </attachedChunks>
   </component>
@@ -119,6 +126,7 @@
       <workItem from="1771223698045" duration="68000" />
       <workItem from="1771492264584" duration="90000" />
       <workItem from="1771511823056" duration="57000" />
+      <workItem from="1772697713763" duration="3006000" />
     </task>
     <task id="LOCAL-00001" summary="feat: fix server bugs">
       <option name="closed" value="true" />

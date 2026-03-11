@@ -107,11 +107,22 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     example: ['mică', 'medie', 'mare'],
-    description: 'Lista de mărimi disponibile',
+    description: 'Lista de mărimi disponibile pentru acest produs (slug-uri).',
     type: [String],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   sizes?: string[];
+
+  @ApiPropertyOptional({
+    example: { mică: null, medie: 5, mare: 10 },
+    description:
+      'Mapare opțională între slug-ul mărimii și prețul suplimentar (în lei) față de prețul de bază al produsului. ' +
+      'Cheile trebuie să fie slug-uri prezente în lista de sizes, valorile pot fi numere sau null dacă nu se aplică un extra preț.',
+    type: Object,
+  })
+  @IsOptional()
+  // Validarea detaliată a numerelor se face în serviciu pentru mai mult control.
+  sizePriceModifiers?: Record<string, number | null>;
 }

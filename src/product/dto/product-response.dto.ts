@@ -80,14 +80,17 @@ export class ProductResponseDto {
   ingredients: IngredientResponseDto[];
 
   @ApiProperty({
-    description: 'Lista de mărimi disponibile (id numeric: 1=mică, 2=medie, 3=mare, 4=familie; name = etichetă afișare)',
+    description:
+      'Lista de mărimi disponibile pentru acest produs. ' +
+      'Fiecare mărime are un id numeric (1=mică, 2=medie, 3=mare, 4=familie), ' +
+      'un nume (etichetă afișare) și, opțional, un extraPrice față de prețul de bază.',
     type: FilterOptionDto,
     isArray: true,
     required: true,
     example: [
-      { id: 1, name: 'Mică' },
-      { id: 2, name: 'Medie' },
-      { id: 3, name: 'Mare' },
+      { id: 1, name: 'Mică', extraPrice: null },
+      { id: 2, name: 'Medie', extraPrice: 5 },
+      { id: 3, name: 'Mare', extraPrice: 10 },
     ],
   })
   @Expose()

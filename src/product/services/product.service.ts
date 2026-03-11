@@ -99,6 +99,9 @@ export class ProductService {
         status: dto.status ?? ItemStatus.ACTIVE,
         categoryId: dto.categoryId,
         sizes: dto.sizes ?? [],
+        ...(dto.sizePriceModifiers !== undefined && {
+          sizePriceModifiers: dto.sizePriceModifiers,
+        }),
         ...(dto.ingredientIds && dto.ingredientIds.length > 0 && {
           ingredients: { connect: dto.ingredientIds.map((id) => ({ id })) },
         }),
@@ -304,6 +307,9 @@ export class ProductService {
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.sizes !== undefined && { sizes: dto.sizes }),
+        ...(dto.sizePriceModifiers !== undefined && {
+          sizePriceModifiers: dto.sizePriceModifiers,
+        }),
         ...(dto.ingredientIds !== undefined && {
           ingredients: { set: dto.ingredientIds.map((id) => ({ id })) },
         }),
@@ -360,6 +366,7 @@ export class ProductService {
         type: true,
         ingredients: { select: { id: true, slug: true, name: true, imageUrl: true } },
         sizes: true,
+        sizePriceModifiers: true,
       },
     });
 
@@ -385,6 +392,8 @@ export class ProductService {
       .map((type) => ({
         id: PRODUCT_TYPE_ENUM_TO_ID[type],
         name: typeLabels[type],
+        // Tipul de produs este doar pentru filtrare, nu modifică prețul de bază.
+        extraPrice: null,
       }));
 
     const ingredientIds = Array.from(ingredientIdsSet);
@@ -403,6 +412,8 @@ export class ProductService {
       .map((size) => ({
         id: SIZE_SLUG_TO_ID[size] ?? 100 + Array.from(sizesSet).indexOf(size),
         name: size.charAt(0).toUpperCase() + size.slice(1),
+        // În contextul filtrelor, nu modificăm prețul – extraPrice rămâne null.
+        extraPrice: null,
       }));
 
     return {
@@ -415,43 +426,61 @@ export class ProductService {
   }
 
   /**
-   * Mapează un array de slug-uri de mărimi la FilterOptionDto[] (id numeric, name pentru UI).
+   * Mapează un array de slug-uri de mărimi la FilterOptionDto[] (id numeric, name pentru UI, extraPrice).
    * @param items - Slug-uri din baza de date (ex: ['mică', 'medie', 'mare'])
-   * @returns FilterOptionDto[] cu id numeric și name formatat
+   * @param extraPriceBySlug - Mapare opțională slug -> extraPrice (lei) față de prețul de bază al produsului
+   * @returns FilterOptionDto[] cu id numeric, name formatat și extraPrice (sau null dacă nu există)
    */
-  private mapToFilterOptions(items: string[] | undefined | null): FilterOptionDto[] {
+  private mapToFilterOptions(
+    items: string[] | undefined | null,
+    extraPriceBySlug?: Record<string, number | null>,
+  ): FilterOptionDto[] {
     if (!items || !Array.isArray(items)) {
       return [];
     }
     return items.map((item) => ({
       id: SIZE_SLUG_TO_ID[item] ?? 99,
-      name: item && item.length > 0 ? item.charAt(0).toUpperCase() + item.slice(1) : item,
+      name:
+        item && item.length > 0
+          ? item.charAt(0).toUpperCase() + item.slice(1)
+          : item,
+      extraPrice:
+        extraPriceBySlug && Object.prototype.hasOwnProperty.call(extraPriceBySlug, item)
+          ? extraPriceBySlug[item] ?? null
+          : null,
     }));
   }
 
   private toResponseDto(
     product: {
-    id: number;
-    slug: string;
-    name: string;
-    description: string | null;
-    price: number;
-    imageUrl: string | null;
-    type: ProductType;
-    status: ItemStatus;
-    categoryId: number;
-    ingredients: Array<{ id: number; slug: string; name: string; imageUrl: string | null; defaultExtraPrice: number | null }>;
-    sizes: string[];
-    createdAt: Date;
-    updatedAt: Date;
-    category: {
       id: number;
       slug: string;
       name: string;
-      status: CategoryStatus;
+      description: string | null;
+      price: number;
+      imageUrl: string | null;
+      type: ProductType;
+      status: ItemStatus;
+      categoryId: number;
+      ingredients: Array<{
+        id: number;
+        slug: string;
+        name: string;
+        imageUrl: string | null;
+        defaultExtraPrice: number | null;
+      }>;
+      sizes: string[];
       createdAt: Date;
       updatedAt: Date;
-    } | null;
+      category: {
+        id: number;
+        slug: string;
+        name: string;
+        status: CategoryStatus;
+        createdAt: Date;
+        updatedAt: Date;
+      } | null;
+      sizePriceModifiers?: Prisma.JsonValue | null;
     },
     cartQuantity: number | null = null,
   ): ProductResponseDto {
@@ -474,6 +503,25 @@ export class ProductService {
       defaultExtraPrice: i.defaultExtraPrice ?? null,
     }));
 
+    let sizeExtraPriceMap: Record<string, number | null> = {};
+    if (product.sizePriceModifiers && typeof product.sizePriceModifiers === 'object') {
+      const raw = product.sizePriceModifiers as Record<string, unknown>;
+      sizeExtraPriceMap = Object.entries(raw).reduce<Record<string, number | null>>(
+        (acc, [slug, value]) => {
+          if (value === null || value === undefined) {
+            acc[slug] = null;
+            return acc;
+          }
+          const num = typeof value === 'number' ? value : Number(value);
+          if (!Number.isNaN(num)) {
+            acc[slug] = num;
+          }
+          return acc;
+        },
+        {},
+      );
+    }
+
     return {
       id: product.id,
       slug: product.slug,
@@ -486,7 +534,7 @@ export class ProductService {
       categoryId: product.categoryId,
       category: categoryDto,
       ingredients: ingredientsDto,
-      sizes: this.mapToFilterOptions(product.sizes),
+      sizes: this.mapToFilterOptions(product.sizes, sizeExtraPriceMap),
       cartQuantity,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
