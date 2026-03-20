@@ -34,6 +34,8 @@ import { CategoryResponseDto } from '../../category/dto/category-response.dto';
 import { IngredientResponseDto } from '../../ingredient/dto/ingredient-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { PaginatedMetaDto } from '../../common/dto/paginated-meta.dto';
+import { BulkProductsRequestDto, BulkProductItemRequestDto } from '../dto/bulk-products-request.dto';
+import { BulkProductItemDto } from '../dto/bulk-product-item.dto';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -51,7 +53,7 @@ import { UserResponseDto } from '../../auth/dto/user-response.dto';
  */
 @ApiTags('Produse')
 @ApiBearerAuth()
-@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterSectionDto, FilterOptionDto, IngredientResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto)
+@ApiExtraModels(ErrorResponseDto, ProductResponseDto, ProductListResponseDto, PaginatedMetaDto, ProductFiltersResponseDto, FilterSectionDto, FilterOptionDto, IngredientResponseDto, CategoryResponseDto, CreateProductDto, UpdateProductDto, BulkProductsRequestDto, BulkProductItemRequestDto, BulkProductItemDto)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -316,6 +318,48 @@ export class ProductController {
       throw new BadRequestException('categoryId trebuie să fie un număr valid');
     }
     return this.productService.getFilters(parsedCategoryId);
+  }
+
+  @Post('bulk')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Produse bulk pentru coș (entitate completă + qty)',
+    description:
+      'Primește o listă de perechi (productId, quantity) și returnează pentru fiecare produs găsit întreaga entitate produs (același format ca GET /products/:id) plus qty (cantitatea cerută) și availableQuantity (stoc). ' +
+      'ID-urile inexistente sunt omise. Maxim 30 articole per request. Rută publică – pentru coșul de cumpărături.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de produse: entitate completă (id, name, price, category, ingredients, sizes, etc.) + qty + availableQuantity',
+    schema: {
+      type: 'object',
+      required: ['data'],
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            allOf: [
+              { $ref: getSchemaPath(ProductResponseDto) },
+              { $ref: getSchemaPath(BulkProductItemDto) },
+            ],
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Lista items goală, prea multe articole sau quantity invalid',
+    schema: { $ref: getSchemaPath(ErrorResponseDto) },
+    example: {
+      statusCode: 400,
+      message: ['items trebuie să conțină cel puțin un element', 'quantity trebuie să fie cel puțin 1'],
+      error: 'Bad Request',
+    },
+  })
+  async bulk(@Body() dto: BulkProductsRequestDto) {
+    return this.productService.findBulk(dto.items);
   }
 
   @Get(':id')

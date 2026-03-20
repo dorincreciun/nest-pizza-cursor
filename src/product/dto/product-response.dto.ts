@@ -108,6 +108,16 @@ export class ProductResponseDto {
   @Expose()
   cartQuantity: number | null;
 
+  @ApiProperty({
+    example: 10,
+    description:
+      'Cantitate disponibilă în stoc. Null dacă produsul nu are stoc definit (nelimitat).',
+    required: true,
+    nullable: true,
+  })
+  @Expose()
+  stockQuantity: number | null;
+
   @ApiProperty({ example: '2024-01-15T10:30:00.000Z', description: 'Data și ora creării (format ISO 8601)', type: String, required: true })
   @Expose()
   createdAt: string;

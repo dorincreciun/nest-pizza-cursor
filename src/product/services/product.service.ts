@@ -102,6 +102,9 @@ export class ProductService {
         ...(dto.sizePriceModifiers !== undefined && {
           sizePriceModifiers: dto.sizePriceModifiers,
         }),
+        ...(dto.stockQuantity !== undefined && {
+          stockQuantity: dto.stockQuantity ?? null,
+        }),
         ...(dto.ingredientIds && dto.ingredientIds.length > 0 && {
           ingredients: { connect: dto.ingredientIds.map((id) => ({ id })) },
         }),
@@ -222,6 +225,45 @@ export class ProductService {
   }
 
   /**
+   * Returnează întreaga entitate produs pentru fiecare ID cerut, plus qty (cantitatea cerută) și availableQuantity (stoc).
+   * ID-urile inexistente sau invalide sunt omise. Ordinea răspunsului respectă ordinea din request.
+   * @param items - Lista de perechi (productId, quantity) trimisă de client
+   * @returns Lista de obiecte: ProductResponseDto (entitate completă) + qty + availableQuantity
+   */
+  async findBulk(
+    items: Array<{ productId: string; quantity: number }>,
+  ): Promise<Array<ProductResponseDto & { qty: number; availableQuantity: number | null }>> {
+    if (items.length === 0) {
+      return [];
+    }
+    const numericIds = items
+      .map((it) => parseInt(String(it.productId).trim(), 10))
+      .filter((n) => !Number.isNaN(n) && n >= 1);
+    if (numericIds.length === 0) {
+      return [];
+    }
+    const uniqueIds = [...new Set(numericIds)];
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: uniqueIds } },
+      include: { category: true, ingredients: true },
+    });
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const result: Array<ProductResponseDto & { qty: number; availableQuantity: number | null }> = [];
+    for (const it of items) {
+      const id = parseInt(String(it.productId).trim(), 10);
+      if (Number.isNaN(id) || id < 1 || !byId.has(id)) continue;
+      const p = byId.get(id)!;
+      const dto = this.toResponseDto(p, null);
+      result.push({
+        ...dto,
+        qty: it.quantity,
+        availableQuantity: p.stockQuantity ?? null,
+      });
+    }
+    return result;
+  }
+
+  /**
    * Returnează un produs după ID
    * @param id - ID-ul produsului
    * @returns Produsul găsit
@@ -309,6 +351,9 @@ export class ProductService {
         ...(dto.sizes !== undefined && { sizes: dto.sizes }),
         ...(dto.sizePriceModifiers !== undefined && {
           sizePriceModifiers: dto.sizePriceModifiers,
+        }),
+        ...(dto.stockQuantity !== undefined && {
+          stockQuantity: dto.stockQuantity ?? null,
         }),
         ...(dto.ingredientIds !== undefined && {
           ingredients: { set: dto.ingredientIds.map((id) => ({ id })) },
@@ -472,6 +517,7 @@ export class ProductService {
       sizes: string[];
       createdAt: Date;
       updatedAt: Date;
+      stockQuantity?: number | null;
       category: {
         id: number;
         slug: string;
@@ -536,6 +582,7 @@ export class ProductService {
       ingredients: ingredientsDto,
       sizes: this.mapToFilterOptions(product.sizes, sizeExtraPriceMap),
       cartQuantity,
+      stockQuantity: product.stockQuantity ?? null,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };

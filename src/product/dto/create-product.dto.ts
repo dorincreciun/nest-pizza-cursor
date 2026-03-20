@@ -10,7 +10,7 @@ import {
   MinLength,
   Min,
   Matches,
-  ArrayMinSize,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProductType, ItemStatus } from '@prisma/client';
@@ -123,6 +123,19 @@ export class CreateProductDto {
     type: Object,
   })
   @IsOptional()
-  // Validarea detaliată a numerelor se face în serviciu pentru mai mult control.
   sizePriceModifiers?: Record<string, number | null>;
+
+  @ApiPropertyOptional({
+    example: 50,
+    description:
+      'Cantitate disponibilă în stoc. Null sau lipsă = stoc nelimitat.',
+    minimum: 0,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v != null && v !== '')
+  @IsInt({ message: 'stockQuantity trebuie să fie un număr întreg' })
+  @Min(0, { message: 'stockQuantity trebuie să fie 0 sau pozitiv' })
+  @Type(() => Number)
+  stockQuantity?: number | null;
 }

@@ -93,6 +93,7 @@ model Product {
   categoryId          Int          @map("category_id")
   sizes               String[]     @default([])
   sizePriceModifiers  Json?        @map("size_price_modifiers")
+  stockQuantity       Int?         @map("stock_quantity")
   createdAt           DateTime     @default(now()) @map("created_at")
   updatedAt           DateTime     @updatedAt @map("updated_at")
   category            Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
